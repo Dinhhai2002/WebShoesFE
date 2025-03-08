@@ -1,0 +1,42 @@
+.body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: url(../../assets//image//Logo1.png);
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
+.content {
+  background-color: rgba(255, 255, 255, 0.8); /* Màu nền cho nội dung */
+  // box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+  padding: 10px;
+  height: 400px;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  text-decoration: underline;
+  color: var(--primary);
+}
+.btn_google {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  // background: #1976d2 !important;
+  color: #0959aa !important;
+  border-radius: 20px;
+
+  &:hover {
+    background: #0959aa !important;
+    color: var(--white) !important;
+
+    div {
+      background: #0959aa !important;
+    }
+  }
+}
