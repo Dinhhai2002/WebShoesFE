@@ -41,7 +41,6 @@ const Login = () => {
   });
 
   const onSubmitHandler: SubmitHandler<ValidateInput> = async (values) => {
-    console.log(123);
     
     setLoading(true);
     const dataLogin = await authenticationApiService.Login(
