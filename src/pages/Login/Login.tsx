@@ -41,7 +41,6 @@ const Login = () => {
   });
 
   const onSubmitHandler: SubmitHandler<ValidateInput> = async (values) => {
-    
     setLoading(true);
     const dataLogin = await authenticationApiService.Login(
       values.name,
@@ -52,6 +51,9 @@ const Login = () => {
       userApiService.setToken(dataLogin.data.token);
       const dataUserDetail = await userApiService.getUser();
       localStorage.setItem("user", JSON.stringify(dataUserDetail.data));
+      if (dataUserDetail.data.cart_id) {
+        localStorage.setItem("cartId", dataUserDetail.data.cart_id.toString());
+      }
 
       setLoading(false);
       window.location.href = "/";

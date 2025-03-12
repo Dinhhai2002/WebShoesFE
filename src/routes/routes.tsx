@@ -1,4 +1,3 @@
-
 import { Suspense } from "react";
 import Home from "../pages/Home";
 import Login from "../pages/Login/Login";
@@ -10,6 +9,7 @@ export const routes = {
   ForgotPassword: "/authentication/forgot-password",
   OTP: "/authentication/otp",
   ResetPassword: "/authentication/reset-password",
+  Cart: "/cart",
 };
 
 // export const publicRoutes = [

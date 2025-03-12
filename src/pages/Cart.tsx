@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -12,105 +12,153 @@ import {
   Divider,
   Box,
   Paper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from "@mui/material";
 import { Add, Remove, Delete } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
-
-// Interface for cart items
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
-}
+import { useAuth } from "../context/AuthContext";
+import { CartDetail } from "../services/API/CartApi";
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
   const cartContext = useContext(CartContext);
+  const { isAuthenticated } = useAuth();
+  const [cartItems, setCartItems] = useState<CartDetail[]>([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Nếu đã đăng nhập, sử dụng dữ liệu từ CartContext
+      if (cartContext) {
+        setCartItems(cartContext.cart);
+      }
+    } else {
+      // Nếu chưa đăng nhập, lấy dữ liệu từ localStorage
+      const localCartItems = localStorage.getItem("cart_items");
+      if (localCartItems) {
+        setCartItems(JSON.parse(localCartItems));
+      } else {
+        setCartItems([]);
+      }
+    }
+  }, [isAuthenticated, cartContext]);
 
   if (!cartContext) {
     // Xử lý trường hợp context không được cung cấp
     return null;
   }
 
-  const { cart, removeFromCart, updateQuantity } = cartContext;
+  const { removeFromCart, updateQuantity } = cartContext;
 
   // Handle quantity increase
   const increaseQuantity = (id: number) => {
-    const item = cart.find((item) => item.id === id);
+    const item = cartItems.find((item) => item.id === id);
     if (item) {
       updateQuantity(id, item.quantity + 1);
     }
   };
 
+  const handleDialogOpen = (id: number) => {
+    setSelectedItemId(id);
+    setOpenDialog(true);
+  };
+
+  const handleDialogClose = () => {
+    setOpenDialog(false);
+    setSelectedItemId(null);
+  };
+
+  const handleRemoveConfirmed = () => {
+    if (selectedItemId !== null) {
+      removeFromCart(selectedItemId);
+    }
+    handleDialogClose();
+  };
+
   const decreaseQuantity = (id: number) => {
-    const item = cart.find((item) => item.id === id);
-    if (item && item.quantity > 1) {
-      updateQuantity(id, item.quantity - 1);
+    const item = cartItems.find((item) => item.id === id);
+    if (item) {
+      if (item.quantity > 1) {
+        updateQuantity(id, item.quantity - 1);
+      } else {
+        handleDialogOpen(id);
+      }
     }
   };
 
   const removeItem = (id: number) => {
-    removeFromCart(id);
+    handleDialogOpen(id);
   };
 
-  const totalPrice = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+  };
+
+  const totalPrice = cartItems.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
   const shippingFee = totalPrice >= 300 ? 0 : 15;
   const finalTotal = totalPrice + shippingFee;
 
   return (
-    <Container>
+    <Container sx={{ mt: 4, mb:4 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>
         🛒 Your Shopping Cart
       </Typography>
 
-      {cart.length === 0 ? (
+      {cartItems.length === 0 ? (
         <Typography variant="h6">Your cart is empty.</Typography>
       ) : (
-        <Grid container spacing={3}>
-          {/* Product Column */}
-          <Grid item xs={12} md={8}>
-            {cart.map((item) => (
-              <Card key={item.id} sx={{ display: "flex", mb: 2, p: 2 }}>
-                <CardMedia
-                  component="img"
-                  sx={{ width: 100, height: 100, objectFit: "cover" }}
-                  image={item.image}
-                  alt={item.name}
-                />
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6">{item.name}</Typography>
-                  <Typography color="text.secondary">
-                    ${item.price} x {item.quantity}
-                  </Typography>
-                  <CardActions>
-                    <IconButton onClick={() => decreaseQuantity(item.id)}>
-                      <Remove />
-                    </IconButton>
-                    <Typography>{item.quantity}</Typography>
-                    <IconButton onClick={() => increaseQuantity(item.id)}>
-                      <Add />
-                    </IconButton>
-                    <IconButton onClick={() => removeItem(item.id)} color="error">
-                      <Delete />
-                    </IconButton>
-                  </CardActions>
-                </CardContent>
-              </Card>
-            ))}
+        <>
+          <Grid container spacing={3}>
+            {/* Product Column */}
+            <Grid item xs={12}>
+              {cartItems.map((item) => (
+                <Card key={item.id} sx={{ display: "flex", mb: 2, p: 2 }}>
+                  <Link to={`/product/${item.product_detail.product_id}`} style={{ textDecoration: 'none' }}>
+                    <CardMedia
+                      component="img"
+                      sx={{ width: 100, height: 100, objectFit: "cover" }}
+                      image={item.product_detail.image_url}
+                      alt={item.product_detail.name}
+                    />
+                  </Link>
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6">{item.product_detail.name}</Typography>
+                    <Typography color="text.secondary">
+                      {formatCurrency(item.product_detail.price)} x {item.quantity}
+                    </Typography>
+                    <CardActions>
+                      <IconButton onClick={() => decreaseQuantity(item.id)}>
+                        <Remove />
+                      </IconButton>
+                      <Typography>{item.quantity}</Typography>
+                      <IconButton onClick={() => increaseQuantity(item.id)}>
+                        <Add />
+                      </IconButton>
+                      <IconButton onClick={() => removeItem(item.id)} color="error">
+                        <Delete />
+                      </IconButton>
+                    </CardActions>
+                  </CardContent>
+                </Card>
+              ))}
+            </Grid>
           </Grid>
 
           {/* Summary Column */}
-          <Grid item xs={12} md={4}>
+          <Box sx={{ mt: 4 }}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6">Order Summary</Typography>
               <Divider sx={{ my: 2 }} />
-              <Typography>Product Total: ${totalPrice}</Typography>
-              <Typography>Shipping Fee: ${shippingFee}</Typography>
+              <Typography>Product Total: {formatCurrency(totalPrice)}</Typography>
+              <Typography>Shipping Fee: {formatCurrency(shippingFee)}</Typography>
               <Typography variant="h5" sx={{ mt: 2 }}>
-                Total: ${finalTotal}
+                Total: {formatCurrency(finalTotal)}
               </Typography>
 
               {/* Checkout Button */}
@@ -124,9 +172,32 @@ const Cart: React.FC = () => {
                 Proceed to Checkout
               </Button>
             </Paper>
-          </Grid>
-        </Grid>
+          </Box>
+        </>
       )}
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={openDialog}
+        onClose={handleDialogClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Xác nhận xóa sản phẩm khỏi giỏ hàng"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Bạn có muốn xóa sản phẩm này khỏi giỏ hàng hay không?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose} color="primary">
+            Hủy
+          </Button>
+          <Button onClick={handleRemoveConfirmed} color="primary" autoFocus>
+            Có
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Related Products */}
       <Typography variant="h5" sx={{ mt: 5 }}>

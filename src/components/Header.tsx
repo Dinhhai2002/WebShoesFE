@@ -17,6 +17,7 @@ import {
   ListItemButton,
   ListItemText,
   Paper,
+  Divider,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -31,6 +32,7 @@ import { routes } from "../routes/routes";
 
 const Header: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [cartAnchorEl, setCartAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const { isAuthenticated, logout } = useAuth();
@@ -77,6 +79,18 @@ const Header: React.FC = () => {
     setSuggestions([]);
   };
 
+  const handleCartMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setCartAnchorEl(event.currentTarget);
+  };
+
+  const handleCartMenuClose = () => {
+    setCartAnchorEl(null);
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+  };
+
   const cartContext = useContext(CartContext);
 
   if (!cartContext) {
@@ -90,7 +104,7 @@ const Header: React.FC = () => {
     cart.length > 0
       ? cart.reduce((count, item) => count + item.quantity, 0)
       : 0;
-  console.log("đây là cart item", cartItemCount);
+  const totalPrice = cart.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
 
   return (
     <AppBar
@@ -99,7 +113,7 @@ const Header: React.FC = () => {
     >
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
         {/* Logo */}
-        <Box display="flex" alignItems="center">
+        <Box display="flex" alignItems="center" component={RouterLink} to={routes.Home} sx={{ textDecoration: 'none' }}>
           <img src="/logo.png" alt="Logo" style={{ height: 40 }} />
           <Typography variant="h6" fontWeight="bold" ml={1}>
             MyStore
@@ -148,11 +162,92 @@ const Header: React.FC = () => {
         {/* Giỏ hàng + User */}
         <Box display="flex" alignItems="center">
           {/* Giỏ hàng */}
-          <IconButton sx={{ mr: 2 }}>
-            <Badge badgeContent={cartItemCount} color="error" showZero>
-              <ShoppingCartIcon />
-            </Badge>
-          </IconButton>
+          <Box
+            sx={{ position: 'relative' }}
+            onMouseEnter={handleCartMenuOpen}
+            onMouseLeave={handleCartMenuClose}
+          >
+            <IconButton sx={{ mr: 2 }}>
+              <Badge badgeContent={cartItemCount} color="error" showZero>
+                <ShoppingCartIcon />
+              </Badge>
+            </IconButton>
+
+            {/* Cart Menu */}
+            <Menu
+              anchorEl={cartAnchorEl}
+              open={Boolean(cartAnchorEl)}
+              onClose={handleCartMenuClose}
+              PaperProps={{
+                onMouseEnter: () => {},
+                onMouseLeave: handleCartMenuClose,
+                sx: {
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  width: 300,
+                  maxHeight: 400,
+                  overflow: 'auto',
+                  mt: 1,
+                  boxShadow: 3,
+                },
+              }}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+            >
+              {cart.length === 0 ? (
+                <MenuItem disabled>
+                  <Typography>Giỏ hàng trống</Typography>
+                </MenuItem>
+              ) : (
+                <Box>
+                  {cart.map((item) => (
+                    <MenuItem key={item.id} sx={{ py: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <img 
+                          src={item.product_detail.image_url} 
+                          alt={item.product_detail.name}
+                          style={{ width: 50, height: 50, objectFit: 'cover', marginRight: 10 }}
+                        />
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="body2" noWrap>
+                            {item.product_detail.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatCurrency(item.product_detail.price)} x {item.quantity}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                  <Divider />
+                  <MenuItem sx={{ justifyContent: 'space-between' }}>
+                    <Typography variant="subtitle1">Tổng tiền:</Typography>
+                    <Typography variant="subtitle1" color="primary">
+                      {formatCurrency(totalPrice)}
+                    </Typography>
+                  </MenuItem>
+                  <MenuItem>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      component={RouterLink}
+                      to={routes.Cart}
+                      onClick={handleCartMenuClose}
+                    >
+                      Xem giỏ hàng
+                    </Button>
+                  </MenuItem>
+                </Box>
+              )}
+            </Menu>
+          </Box>
 
           {/* Nếu chưa login */}
           {!isAuthenticated ? (
