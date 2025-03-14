@@ -9,30 +9,47 @@ import Product from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import ProductList from "./pages/ProductList";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import OrderHistory from "./pages/OrderHistory";
 import { CartProvider } from "./context/CartContext";
 // import { customTheme } from "./style/themeCustom";
-import { ToastContainer } from "../node_modules/react-toastify/dist/index";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Login from "./pages/Login/Login";
 import { AuthProvider } from "./context/AuthContext";
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <CssBaseline /> {/* Reset CSS để đồng bộ */}
-      <ToastContainer />
       <Router>
-      <AuthProvider>
-      <CartProvider>
-        <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/authentication/login" element={<Login />} />
-          <Route path="/product/:id" element={<Product />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/list-product" element={<ProductList />} />
-        </Routes>
-        <Footer />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Header />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/authentication/login" element={<Login />} />
+              <Route path="/product/:id" element={<Product />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/list-product" element={<ProductList />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/order-history" element={<OrderHistory />} />
+            </Routes>
+            <Footer />
+          </CartProvider>
         </AuthProvider>
       </Router>
     </ThemeProvider>

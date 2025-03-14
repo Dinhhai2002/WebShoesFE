@@ -102,9 +102,15 @@ const Header: React.FC = () => {
 
   const cartItemCount =
     cart.length > 0
-      ? cart.reduce((count, item) => count + item.quantity, 0)
+      ? cart.reduce((count, item) => {
+          if (!item) return count;
+          return count + (item.quantity || 0);
+        }, 0)
       : 0;
-  const totalPrice = cart.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
+  const totalPrice = cart.reduce((total, item) => {
+    if (!item || !item.product_detail) return total;
+    return total + (item.product_detail.price * item.quantity);
+  }, 0);
 
   return (
     <AppBar
@@ -208,23 +214,25 @@ const Header: React.FC = () => {
               ) : (
                 <Box>
                   {cart.map((item) => (
-                    <MenuItem key={item.id} sx={{ py: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <img 
-                          src={item.product_detail.image_url} 
-                          alt={item.product_detail.name}
-                          style={{ width: 50, height: 50, objectFit: 'cover', marginRight: 10 }}
-                        />
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography variant="body2" noWrap>
-                            {item.product_detail.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatCurrency(item.product_detail.price)} x {item.quantity}
-                          </Typography>
+                    item && item.product_detail ? (
+                      <MenuItem key={item.id} sx={{ py: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                          <img 
+                            src={item.product_detail.image_url} 
+                            alt={item.product_detail.name}
+                            style={{ width: 50, height: 50, objectFit: 'cover', marginRight: 10 }}
+                          />
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="body2" noWrap>
+                              {item.product_detail.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {formatCurrency(item.product_detail.price)} x {item.quantity}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-                    </MenuItem>
+                      </MenuItem>
+                    ) : null
                   ))}
                   <Divider />
                   <MenuItem sx={{ justifyContent: 'space-between' }}>
@@ -284,7 +292,7 @@ const Header: React.FC = () => {
                 <MenuItem>
                   <AccountCircleIcon sx={{ mr: 1 }} /> Tài khoản
                 </MenuItem>
-                <MenuItem>
+                <MenuItem component={RouterLink} to={routes.OrderHistory} onClick={handleMenuClose}>
                   <HistoryIcon sx={{ mr: 1 }} /> Lịch sử đơn hàng
                 </MenuItem>
                 <MenuItem onClick={logout}>

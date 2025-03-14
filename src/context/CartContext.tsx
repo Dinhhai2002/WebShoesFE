@@ -49,11 +49,25 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync cart data when authentication status or cartItems change
+  // Load cart from localStorage when component mounts
   useEffect(() => {
-    setCart(cartItems);
+    if (!isAuthenticated) {
+      const savedCart = localStorage.getItem('localCart');
+      if (savedCart) {
+        setCart(JSON.parse(savedCart));
+      }
+    } else {
+      setCart(cartItems);
+    }
     setLoading(false);
-  }, [cartItems]);
+  }, [isAuthenticated, cartItems]);
+
+  // Save cart to localStorage when it changes and user is not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      localStorage.setItem('localCart', JSON.stringify(cart));
+    }
+  }, [cart, isAuthenticated]);
 
   const addToCart = async (productDetailId: number, quantity: number) => {
     try {
@@ -77,7 +91,16 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCart(prevCart => [...prevCart, response.data]);
         setCartItems(prevItems => [...prevItems, response.data]);
       } else {
-        setError("Please login to add items to cart");
+        // Nếu chưa đăng nhập, thêm vào localStorage
+        const newItem: CartDetail = {
+          id: Date.now(), // Tạo ID tạm thời
+          cart_id: 0,
+          product_detail_id: productDetailId,
+          quantity: quantity,
+          product_detail: {} as ProductDetail // Sẽ được cập nhật sau khi đăng nhập
+        };
+        
+        setCart(prevCart => [...prevCart, newItem]);
       }
     } catch (err) {
       setError('Error adding item to cart');
@@ -98,7 +121,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCart(prevCart => prevCart.filter(item => item.id !== id));
         setCartItems(prevItems => prevItems.filter(item => item.id !== id));
       } else {
-        setError("Please login to remove items from cart");
+        // Nếu chưa đăng nhập, xóa khỏi localStorage
+        setCart(prevCart => prevCart.filter(item => item.id !== id));
       }
     } catch (err) {
       setError('Error removing item from cart');
@@ -132,7 +156,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           )
         );
       } else {
-        setError("Please login to update cart quantity");
+        // Nếu chưa đăng nhập, cập nhật trong localStorage
+        setCart(prevCart =>
+          prevCart.map(item =>
+            item.id === id ? { ...item, quantity } : item
+          )
+        );
       }
     } catch (err) {
       setError('Error updating cart quantity');

@@ -25,6 +25,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (cartId) {
                     const response = await cartApi.findAll({ cart_id: parseInt(cartId) });
                     setCartItems(response.data.list || []);
+
+                    // Transfer local cart to server if exists
+                    const localCart = localStorage.getItem('localCart');
+                    if (localCart) {
+                        const localCartItems = JSON.parse(localCart);
+                        for (const item of localCartItems) {
+                            try {
+                                await cartApi.create({
+                                    cart_id: parseInt(cartId),
+                                    product_detail_id: item.product_detail_id,
+                                    quantity: item.quantity
+                                });
+                            } catch (error) {
+                                console.error('Error transferring cart item:', error);
+                            }
+                        }
+                        // Clear local cart after successful transfer
+                        localStorage.removeItem('localCart');
+                    }
                 } else {
                     setCartItems([]);
                 }

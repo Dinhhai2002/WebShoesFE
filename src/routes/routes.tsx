@@ -10,6 +10,7 @@ export const routes = {
   OTP: "/authentication/otp",
   ResetPassword: "/authentication/reset-password",
   Cart: "/cart",
+  OrderHistory: "/order-history"
 };
 
 // export const publicRoutes = [

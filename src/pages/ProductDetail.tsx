@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Typography, Grid, Button, ToggleButtonGroup, ToggleButton, Divider, CircularProgress, Alert } from "@mui/material";
+import { Box, Typography, Grid, Button, ToggleButtonGroup, ToggleButton, Divider, CircularProgress, Alert, IconButton } from "@mui/material";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import ProductImageGallery from "../components/ProductImageGallery";
 import ProductReview from "../components/ProductReview";
 import productApi from "../services/API/ProductApi";
@@ -14,6 +16,9 @@ import { ProductDetail } from "../services/API/ProductDetailApi";
 import { Color } from "../services/API/ColorApi";
 import { Size } from "../services/API/SizeApi";
 import { Material } from "../services/API/MaterialApi";
+import { CartContext } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -28,6 +33,9 @@ const ProductDetailPage: React.FC = () => {
     const [selectedSize, setSelectedSize] = useState<Size | null>(null);
     const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
     const [productImages, setProductImages] = useState<string[]>([]);
+    const cartContext = useContext(CartContext);
+    const { isAuthenticated } = useAuth();
+    const [quantity, setQuantity] = useState(1);
 
     // Fetch product and options data
     useEffect(() => {
@@ -127,6 +135,52 @@ const ProductDetailPage: React.FC = () => {
         fetchAllProductDetails();
     }, [product]);
 
+    const handleQuantityChange = (type: 'increase' | 'decrease') => {
+        if (type === 'increase') {
+            setQuantity(prev => prev + 1);
+        } else {
+            if (quantity > 1) {
+                setQuantity(prev => prev - 1);
+            }
+        }
+    };
+
+    const handleAddToCart = () => {
+        if (!isAuthenticated) {
+            toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+            return;
+        }
+
+        if (!productDetail) {
+            toast.error("Sản phẩm không khả dụng!");
+            return;
+        }
+
+        if (!cartContext) {
+            toast.error("Không thể thêm sản phẩm vào giỏ hàng!");
+            return;
+        }
+
+        try {
+            // Kiểm tra sản phẩm đã có trong giỏ hàng chưa
+            const existingItem = cartContext.cart.find(item => item.product_detail.id === productDetail.id);
+            
+            if (existingItem) {
+                // Nếu đã có, tăng số lượng lên theo số lượng đã chọn
+                cartContext.updateQuantity(existingItem.id, existingItem.quantity + quantity);
+                toast.success("Đã cập nhật số lượng sản phẩm trong giỏ hàng!");
+            } else {
+                // Nếu chưa có, thêm mới với số lượng đã chọn
+                cartContext.addToCart(productDetail.id, quantity);
+                toast.success("Thêm sản phẩm vào giỏ hàng thành công!");
+            }
+            // Reset số lượng về 1 sau khi thêm vào giỏ hàng
+            setQuantity(1);
+        } catch (error) {
+            toast.error("Không thể thêm sản phẩm vào giỏ hàng!");
+        }
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -206,12 +260,38 @@ const ProductDetailPage: React.FC = () => {
 
                     <Divider sx={{ my: 2 }} />
 
+                    {/* Quantity Controls */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{ mr: 2 }}>
+                            Số lượng:
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                            <IconButton 
+                                onClick={() => handleQuantityChange('decrease')}
+                                disabled={quantity <= 1}
+                                size="small"
+                            >
+                                <RemoveIcon />
+                            </IconButton>
+                            <Typography sx={{ px: 2, minWidth: 40, textAlign: 'center' }}>
+                                {quantity}
+                            </Typography>
+                            <IconButton 
+                                onClick={() => handleQuantityChange('increase')}
+                                size="small"
+                            >
+                                <AddIcon />
+                            </IconButton>
+                        </Box>
+                    </Box>
+
                     <Button 
                         variant="contained"
                         color="primary"
                         size="large" 
                         disabled={!productDetail}
                         startIcon={<ShoppingCartIcon />}
+                        onClick={handleAddToCart}
                         sx={{
                             fontSize: '1.1rem',
                             fontWeight: 'bold',
