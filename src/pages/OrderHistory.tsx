@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import orderApi from '../services/API/OrderApi';
 import { StatusOrderEnum } from '../utils/enum/StatusOrderEnum';
 import { PaymentStatusEnum } from '../utils/enum/PaymentStatusEnum';
+import { orderStatusConfig, paymentStatusConfig } from '../config/statusConfig';
 import { toast } from 'react-toastify';
 
 type ChipColor = 'warning' | 'info' | 'primary' | 'secondary' | 'success' | 'error' | 'default';
@@ -44,8 +45,8 @@ interface Order {
   id: number;
   created_at: string;
   total_price: number;
-  status: number;
-  payment_status: number;
+  status: StatusOrderEnum;
+  payment_status: PaymentStatusEnum;
   order_detail?: OrderDetail[];
 }
 
@@ -58,22 +59,6 @@ const OrderHistory: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
-
-  const orderStatusConfig: Record<number, StatusConfig> = {
-    1: { color: 'warning', label: 'Chờ xác nhận' },
-    2: { color: 'info', label: 'Đã xác nhận' },
-    3: { color: 'primary', label: 'Đang xử lý' },
-    4: { color: 'secondary', label: 'Đang giao hàng' },
-    5: { color: 'success', label: 'Đã giao hàng' },
-    6: { color: 'error', label: 'Đã hủy' }
-  };
-
-  const paymentStatusConfig: Record<number, StatusConfig> = {
-    1: { color: 'warning', label: 'Chưa thanh toán' },
-    2: { color: 'info', label: 'Đang xử lý' },
-    3: { color: 'success', label: 'Đã thanh toán' },
-    4: { color: 'error', label: 'Thanh toán thất bại' }
-  };
 
   useEffect(() => {
     fetchOrders();
@@ -240,6 +225,7 @@ const OrderHistory: React.FC = () => {
                         variant="outlined"
                         size="small"
                         onClick={() => navigate(`/order/${order.id}`)}
+                        sx={{ mr: 1 }}
                       >
                         Chi tiết
                       </Button>
@@ -248,7 +234,6 @@ const OrderHistory: React.FC = () => {
                           variant="contained"
                           size="small"
                           color="primary"
-                          sx={{ ml: 1 }}
                           onClick={async () => {
                             try {
                               const response = await orderApi.getPaymentUrl(order.id);

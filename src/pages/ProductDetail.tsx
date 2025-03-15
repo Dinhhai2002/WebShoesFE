@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Box, Typography, Grid, Button, ToggleButtonGroup, ToggleButton, Divider, CircularProgress, Alert, IconButton } from "@mui/material";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,6 +22,12 @@ import { toast } from "react-toastify";
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const location = useLocation();
+    const initialOptions = location.state as {
+        colorId?: number;
+        sizeId?: number;
+        materialId?: number;
+    } || {};
     const [product, setProduct] = useState<Product | null>(null);
     const [productDetail, setProductDetail] = useState<ProductDetail | null>(null);
     const [colors, setColors] = useState<Color[]>([]);
@@ -57,14 +63,25 @@ const ProductDetailPage: React.FC = () => {
                 setSizes(sizesResponse.data.list);
                 setMaterials(materialsResponse.data.list);
 
-                // Set default selections
-                if (colorsResponse.data.list.length > 0) {
+                // Set selections based on passed options or defaults
+                if (initialOptions.colorId) {
+                    const color = colorsResponse.data.list.find(c => c.id === initialOptions.colorId);
+                    if (color) setSelectedColor(color);
+                } else if (colorsResponse.data.list.length > 0) {
                     setSelectedColor(colorsResponse.data.list[0]);
                 }
-                if (sizesResponse.data.list.length > 0) {
+
+                if (initialOptions.sizeId) {
+                    const size = sizesResponse.data.list.find(s => s.id === initialOptions.sizeId);
+                    if (size) setSelectedSize(size);
+                } else if (sizesResponse.data.list.length > 0) {
                     setSelectedSize(sizesResponse.data.list[0]);
                 }
-                if (materialsResponse.data.list.length > 0) {
+
+                if (initialOptions.materialId) {
+                    const material = materialsResponse.data.list.find(m => m.id === initialOptions.materialId);
+                    if (material) setSelectedMaterial(material);
+                } else if (materialsResponse.data.list.length > 0) {
                     setSelectedMaterial(materialsResponse.data.list[0]);
                 }
             } catch (err) {
@@ -78,7 +95,7 @@ const ProductDetailPage: React.FC = () => {
         if (id) {
             fetchData();
         }
-    }, [id]);
+    }, [id, initialOptions.colorId, initialOptions.sizeId, initialOptions.materialId]);
 
     // Fetch product detail when selections change
     useEffect(() => {

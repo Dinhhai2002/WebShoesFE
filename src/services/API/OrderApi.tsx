@@ -4,6 +4,33 @@ import { StatusOrderEnum } from "../../utils/enum/StatusOrderEnum";
 import { PaymentStatusEnum } from "../../utils/enum/PaymentStatusEnum";
 
 // Types
+interface ProductDetail {
+    id: number;
+    name: string;
+    product_id: number;
+    color_id: number;
+    color: string;
+    size_id: number;
+    size: string;
+    material_id: number;
+    material: string;
+    stock: number;
+    price: number;
+    image_url: string;
+    status: number;
+}
+
+interface OrderDetail {
+    id: number;
+    order_id: number;
+    product_detail_id: number;
+    quantity: number;
+    price: number;
+    total_price: number;
+    status: number;
+    product_detail: ProductDetail;
+}
+
 export interface Order {
     id: number;
     user_id: number;
@@ -14,15 +41,8 @@ export interface Order {
     payment_method: number;
     payment_status: PaymentStatusEnum;
     status: StatusOrderEnum;
-}
-
-export interface OrderDetail {
-    id: number;
-    order_id: number;
-    product_detail_id: number;
-    quantity: number;
-    price: number;
-    status: number;
+    created_at: string;
+    order_detail: OrderDetail[];
 }
 
 interface OrderQueryParams {
@@ -35,7 +55,7 @@ interface OrderQueryParams {
 
 interface OrderListResponse {
     limit: number;
-    list: (Order & { order_detail: OrderDetail[] })[];
+    list: Order[];
     total_record: number;
 }
 
@@ -84,9 +104,9 @@ class OrderApi extends BaseApiService {
     }
 
     // Fetch a single order by ID
-    async findOne(id: number): Promise<ApiResponse<Order & { order_detail: OrderDetail[] }>> {
+    async findOne(id: number): Promise<ApiResponse<Order>> {
         try {
-            const response: AxiosResponse<ApiResponse<Order & { order_detail: OrderDetail[] }>> = await this.api.get(`/order/${id}`);
+            const response: AxiosResponse<ApiResponse<Order>> = await this.api.get(`/order/${id}`);
             return response.data;
         } catch (error) {
             throw error;
@@ -134,9 +154,9 @@ class OrderApi extends BaseApiService {
     }
 
     // Change payment status
-    async changePaymentStatus(id: number, paymentStatus: PaymentStatusEnum): Promise<ApiResponse<Order & { order_detail: OrderDetail[] }>> {
+    async changePaymentStatus(id: number, paymentStatus: PaymentStatusEnum): Promise<ApiResponse<Order>> {
         try {
-            const response: AxiosResponse<ApiResponse<Order & { order_detail: OrderDetail[] }>> = 
+            const response: AxiosResponse<ApiResponse<Order>> = 
                 await this.api.post(`/order/${id}/change-payment-status`, { payment_status: paymentStatus });
             return response.data;
         } catch (error) {

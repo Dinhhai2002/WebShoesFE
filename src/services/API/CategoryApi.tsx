@@ -4,6 +4,7 @@ import BaseApiService from "./BaseApiService";
 export interface Category {
     id: number;
     name: string;
+    image_url: string;
     parent_id: number;
     status: number;
 }

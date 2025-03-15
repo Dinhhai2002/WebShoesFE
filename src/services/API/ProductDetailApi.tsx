@@ -11,17 +11,23 @@ export interface ProductDetail {
     size: string;
     material_id: number;
     material: string;
-    price: number;
+    brand_id: number;
+    brand: string;
+    category_id: number;
+    category: string;
     stock: number;
-    image_url: string;
+    price: number;
+    image_url: string | null;
     status: number;
 }
 
-interface ProductDetailQueryParams {
+export interface ProductDetailQueryParams {
     product_id?: number;
     color_id?: number;
     size_id?: number;
     material_id?: number;
+    brand_id?: number;
+    category_id?: number;
     key_search?: string;
     status?: number;
     page?: number;
@@ -40,13 +46,25 @@ interface ApiResponse<T> {
     data: T;
 }
 
+export interface CRUDProductDetailRequest {
+    name: string;
+    product_id: number;
+    color_id: number;
+    size_id: number;
+    material_id: number;
+    brand_id: number;
+    category_id: number;
+    price: number;
+    stock: number;
+}
+
 class ProductDetailApi extends BaseApiService {
     constructor(token?: string) {
         super(token);
     }
 
     // Fetch all product details with filters and pagination
-    async findAll(params: ProductDetailQueryParams): Promise<ApiResponse<ProductDetailListResponse>> {
+    async findAll(params: ProductDetailQueryParams = {}): Promise<ApiResponse<ProductDetailListResponse>> {
         try {
             const response: AxiosResponse<ApiResponse<ProductDetailListResponse>> = await this.api.get("/product-detail", {
                 params: {
@@ -54,6 +72,8 @@ class ProductDetailApi extends BaseApiService {
                     color_id: params.color_id || -1,
                     size_id: params.size_id || -1,
                     material_id: params.material_id || -1,
+                    brand_id: params.brand_id || -1,
+                    category_id: params.category_id || -1,
                     key_search: params.key_search || "",
                     status: params.status || -1,
                     page: params.page || 1,
@@ -87,15 +107,7 @@ class ProductDetailApi extends BaseApiService {
     }
 
     // Create a new product detail
-    async create(productDetail: {
-        name: string;
-        product_id: number;
-        color_id: number;
-        size_id: number;
-        material_id: number;
-        price: number;
-        stock: number;
-    }): Promise<ApiResponse<ProductDetail>> {
+    async create(productDetail: CRUDProductDetailRequest): Promise<ApiResponse<ProductDetail>> {
         try {
             const response: AxiosResponse<ApiResponse<ProductDetail>> = await this.api.post("/product-detail/create", productDetail);
             return response.data;
@@ -105,11 +117,7 @@ class ProductDetailApi extends BaseApiService {
     }
 
     // Update an existing product detail
-    async update(id: number, productDetail: {
-        name: string;
-        price: number;
-        stock: number;
-    }): Promise<ApiResponse<ProductDetail>> {
+    async update(id: number, productDetail: CRUDProductDetailRequest): Promise<ApiResponse<ProductDetail>> {
         try {
             const response: AxiosResponse<ApiResponse<ProductDetail>> = await this.api.post(`/product-detail/${id}/update`, productDetail);
             return response.data;

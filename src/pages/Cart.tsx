@@ -128,7 +128,21 @@ const Cart: React.FC = () => {
                     />
                   </Link>
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6">{item.product_detail.name}</Typography>
+                    <Typography 
+                      variant="h6" 
+                      sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        wordWrap: 'break-word',
+                        lineHeight: 1.2,
+                        height: '2.4em',
+                        width: '40%'
+                      }}
+                    >
+                      {item.product_detail.name}
+                    </Typography>
                     <Typography color="text.secondary">
                       {formatCurrency(item.product_detail.price)} x {item.quantity}
                     </Typography>
