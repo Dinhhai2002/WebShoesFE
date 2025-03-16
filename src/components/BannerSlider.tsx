@@ -58,10 +58,10 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ banners }) => {
                         textAlign: 'center',
                     }}
                 >
-                    <Box sx={{ backgroundColor: 'rgba(0,0,0,0.5)', p: 4, borderRadius: 2 }}>
+                    {/* <Box sx={{ backgroundColor: 'rgba(0,0,0,0.5)', p: 4, borderRadius: 2 }}>
                         <h2>{banner.title}</h2>
                         <p>{banner.description}</p>
-                    </Box>
+                    </Box> */}
                 </Paper>
             ))}
             <IconButton

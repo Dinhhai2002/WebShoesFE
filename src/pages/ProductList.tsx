@@ -24,7 +24,7 @@ import {
   Switch,
   Tooltip,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import productDetailApi, { ProductDetail } from "../services/API/ProductDetailApi";
 import categoryApi, { Category } from "../services/API/CategoryApi";
 import brandApi, { Brand } from "../services/API/BrandApi";
@@ -38,6 +38,8 @@ const ProductList = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { addToCart } = useContext(CartContext);
   
   const [products, setProducts] = useState<ProductDetail[]>([]);
@@ -57,6 +59,17 @@ const ProductList = () => {
     brand_id: -1,
     status: 1, // Chỉ lấy sản phẩm đang active
   });
+
+  // Đọc và xử lý query parameters khi component mount
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get('category');
+    if (categoryFromUrl) {
+      setFilters(prev => ({
+        ...prev,
+        category_id: parseInt(categoryFromUrl)
+      }));
+    }
+  }, [location.search]);
 
   useEffect(() => {
     fetchCategories();
@@ -115,6 +128,18 @@ const ProductList = () => {
   const handleFilterChange = (field: string, value: any) => {
     setFilters(prev => ({ ...prev, [field]: value }));
     setPage(1);
+    
+    // Cập nhật URL khi thay đổi filter
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (value === -1) {
+      newSearchParams.delete(field);
+    } else {
+      newSearchParams.set(field, value.toString());
+    }
+    navigate({
+      pathname: location.pathname,
+      search: newSearchParams.toString()
+    });
   };
 
   const handleAddToCart = async (product: ProductDetail) => {
