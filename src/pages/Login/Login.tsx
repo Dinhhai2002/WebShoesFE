@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import {
@@ -26,9 +26,11 @@ import userApiService from "../../services/API/UserApiService";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { loginGoogleError, loginGoogleSuccess } from "../../utils/LoginGoogle";
 import { useAuth } from "../../context/AuthContext";
+import { CartContext } from "../../context/CartContext";
 
 const Login = () => {
   const { login } = useAuth();
+  const cartContext = useContext(CartContext);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -42,23 +44,34 @@ const Login = () => {
 
   const onSubmitHandler: SubmitHandler<ValidateInput> = async (values) => {
     setLoading(true);
-    const dataLogin = await authenticationApiService.Login(
-      values.name,
-      values.password
-    );
-    if (dataLogin) {
-      login(dataLogin.data.token); 
-      userApiService.setToken(dataLogin.data.token);
-      const dataUserDetail = await userApiService.getUser();
-      localStorage.setItem("user", JSON.stringify(dataUserDetail.data));
-      if (dataUserDetail.data.cart_id) {
-        localStorage.setItem("cartId", dataUserDetail.data.cart_id.toString());
-      }
+    try {
+      const dataLogin = await authenticationApiService.Login(
+        values.name,
+        values.password
+      );
+      if (dataLogin) {
+        userApiService.setToken(dataLogin.data.token);
+        const dataUserDetail = await userApiService.getUser();
+        localStorage.setItem("user", JSON.stringify(dataUserDetail.data));
+        if (dataUserDetail.data.cart_id) {
+          localStorage.setItem("cartId", dataUserDetail.data.cart_id.toString());
+        }
+        login(dataLogin.data.token); 
 
+        // Chuyển đổi giỏ hàng từ localStorage sang server
+        if (cartContext) {
+          await cartContext.migrateLocalCartToServer();
+        }
+
+        setLoading(false);
+        window.location.href = "/";
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setMessage("Đăng nhập thất bại. Vui lòng thử lại!");
+    } finally {
       setLoading(false);
-      window.location.href = "/";
     }
-    setLoading(false);
   };
 
   useEffect(() => {

@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // If user is authenticated, get cartId from localStorage and fetch cart from API
                 const cartId = localStorage.getItem("cartId");
                 if (cartId) {
+                    cartApi.setToken(token);
                     const response = await cartApi.findAll({ cart_id: parseInt(cartId) });
                     setCartItems(response.data.list || []);
 
@@ -60,12 +61,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         setIsAuthenticated(!!token);
-        fetchCartData(token);
+        // Only fetch cart data if user is authenticated
+        if (token) {
+            fetchCartData(token);
+        }
     }, []);
 
     const login = (token: string) => {
         localStorage.setItem("token", token);
         setIsAuthenticated(true);
+        // Fetch cart data after successful login
         fetchCartData(token);
     };
 

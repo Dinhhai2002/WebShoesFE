@@ -41,8 +41,15 @@ export interface ApiResponse<T> {
 }
 
 class CartApi extends BaseApiService {
+    private token: string | null;
     constructor(token?: string) {
         super(token);
+        this.token = token || null;
+    }
+
+    public setToken(token: string | null) {
+        this.token = token;
+        this.updateAuthorizationHeader();
     }
 
     // Fetch all cart details with search, status filter and pagination
@@ -96,6 +103,14 @@ class CartApi extends BaseApiService {
             return response.data;
         } catch (error) {
             throw error;
+        }
+    }
+
+    private updateAuthorizationHeader() {
+        if (this.token) {
+            this.api.defaults.headers["Authorization"] = `Bearer ${this.token}`;
+        } else {
+            delete this.api.defaults.headers["Authorization"];
         }
     }
 }

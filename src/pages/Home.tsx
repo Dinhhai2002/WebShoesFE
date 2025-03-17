@@ -4,10 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import BannerSlider from '../components/BannerSlider';
 import ProductCategories from '../components/ProductCategories';
 import LatestProducts from '../components/LatestProducts';
-import productApi from '../services/API/ProductApi';
-import categoryApi from '../services/API/CategoryApi';
-import brandApi from '../services/API/BrandApi';
-import bannerApi from '../services/API/BannerApi';
+import authenticationApiService from '../services/API/AuthenticationApiService';
 import { Product } from '../services/API/ProductApi';
 import { Category } from '../services/API/CategoryApi';
 import { Brand } from '../services/API/BrandApi';
@@ -28,8 +25,7 @@ const Home: React.FC = () => {
             try {
                 setLoading(true);
                 // Fetch products
-                const productsResponse = await productApi.findAll({
-                    keySearch: '',
+                const productsResponse = await authenticationApiService.getProducts({
                     status: 1,
                     page: 1,
                     limit: 20
@@ -37,8 +33,7 @@ const Home: React.FC = () => {
                 setProducts(productsResponse.data.list);
 
                 // Fetch categories
-                const categoriesResponse = await categoryApi.findAll({
-                    keySearch: '',
+                const categoriesResponse = await authenticationApiService.getCategories({
                     status: 1,
                     page: 1,
                     limit: 8
@@ -46,8 +41,7 @@ const Home: React.FC = () => {
                 setCategories(categoriesResponse.data.list);
 
                 // Fetch brands
-                const brandsResponse = await brandApi.findAll({
-                    key_search: '',
+                const brandsResponse = await authenticationApiService.getBrands({
                     status: 1,
                     page: 1,
                     limit: 8
@@ -55,8 +49,7 @@ const Home: React.FC = () => {
                 setBrands(brandsResponse.data.list);
 
                 // Fetch banners
-                const bannersResponse = await bannerApi.findAll({
-                    key_search: '',
+                const bannersResponse = await authenticationApiService.getBanners({
                     status: 1,
                     page: 1,
                     limit: 5
@@ -118,7 +111,7 @@ const Home: React.FC = () => {
                         justifyContent: 'space-between', 
                         alignItems: 'center',
                         mb: 3,
-                        mt :3
+                        mt: 3
                     }}>
                         <Typography variant="h4">
                             Danh Mục Sản Phẩm

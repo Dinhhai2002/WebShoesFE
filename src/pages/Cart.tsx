@@ -119,7 +119,16 @@ const Cart: React.FC = () => {
             <Grid item xs={12}>
               {cartItems.map((item) => (
                 <Card key={item.id} sx={{ display: "flex", mb: 2, p: 2 }}>
-                  <Link to={`/product/${item.product_detail.product_id}`} style={{ textDecoration: 'none' }}>
+                  <Link 
+                    to={`/product/${item.product_detail.product_id}`} 
+                    state={{
+                      colorId: item.product_detail.color_id,
+                      sizeId: item.product_detail.size_id,
+                      materialId: item.product_detail.material_id,
+                      selectedProduct: item.product_detail
+                    }}
+                    style={{ textDecoration: 'none' }}
+                  >
                     <CardMedia
                       component="img"
                       sx={{ width: 100, height: 100, objectFit: "cover" }}

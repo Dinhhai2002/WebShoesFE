@@ -6,11 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ProductImageGallery from "../components/ProductImageGallery";
 import ProductReview from "../components/ProductReview";
-import productApi from "../services/API/ProductApi";
-import productDetailApi from "../services/API/ProductDetailApi";
-import colorApi from "../services/API/ColorApi";
-import sizeApi from "../services/API/SizeApi";
-import materialApi from "../services/API/MaterialApi";
+import authenticationApiService from "../services/API/AuthenticationApiService";
 import { Product } from "../services/API/ProductApi";
 import { ProductDetail } from "../services/API/ProductDetailApi";
 import { Color } from "../services/API/ColorApi";
@@ -49,14 +45,14 @@ const ProductDetailPage: React.FC = () => {
             try {
                 setLoading(true);
                 // Fetch product
-                const productResponse = await productApi.findOne(Number(id));
+                const productResponse = await authenticationApiService.getProductById(Number(id));
                 setProduct(productResponse.data);
 
                 // Fetch options
                 const [colorsResponse, sizesResponse, materialsResponse] = await Promise.all([
-                    colorApi.findAll({ status: 1 }),
-                    sizeApi.findAll({ status: 1 }),
-                    materialApi.findAll({ status: 1 })
+                    authenticationApiService.getColors({ status: 1 }),
+                    authenticationApiService.getSizes({ status: 1 }),
+                    authenticationApiService.getMaterials({ status: 1 })
                 ]);
 
                 setColors(colorsResponse.data.list);
@@ -103,7 +99,7 @@ const ProductDetailPage: React.FC = () => {
             if (!product || !selectedColor || !selectedSize || !selectedMaterial) return;
 
             try {
-                const response = await productDetailApi.findAll({
+                const response = await authenticationApiService.getProductDetails({
                     product_id: product.id,
                     color_id: selectedColor.id,
                     size_id: selectedSize.id,
@@ -114,7 +110,7 @@ const ProductDetailPage: React.FC = () => {
                 if (response.data.list.length > 0) {
                     setProductDetail(response.data.list[0]);
                     // Update product images from the selected product detail
-                    setProductImages(response.data.list[0].image_urls || []);
+                    setProductImages(response.data.list[0].image_url ? [response.data.list[0].image_url] : []);
                 } else {
                     setProductDetail(null);
                     setProductImages([]);
@@ -133,14 +129,15 @@ const ProductDetailPage: React.FC = () => {
             if (!product) return;
 
             try {
-                const response = await productDetailApi.findAll({
+                const response = await authenticationApiService.getProductDetails({
                     product_id: product.id,
                     status: 1
                 });
 
                 // Collect all unique image URLs from product details
                 const allImages = response.data.list
-                    .flatMap(detail => detail.image_url || [])
+                    .map(detail => detail.image_url)
+                    .filter((url): url is string => !!url)
                     .filter((url, index, self) => self.indexOf(url) === index);
 
                 setProductImages(allImages);
@@ -163,11 +160,6 @@ const ProductDetailPage: React.FC = () => {
     };
 
     const handleAddToCart = () => {
-        if (!isAuthenticated) {
-            toast.error("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
-            return;
-        }
-
         if (!productDetail) {
             toast.error("Sản phẩm không khả dụng!");
             return;
@@ -187,9 +179,30 @@ const ProductDetailPage: React.FC = () => {
                 cartContext.updateQuantity(existingItem.id, existingItem.quantity + quantity);
                 toast.success("Đã cập nhật số lượng sản phẩm trong giỏ hàng!");
             } else {
-                // Nếu chưa có, thêm mới với số lượng đã chọn
-                cartContext.addToCart(productDetail.id, quantity);
-                toast.success("Thêm sản phẩm vào giỏ hàng thành công!");
+                // Nếu chưa có, thêm mới với số lượng đã chọn và đầy đủ thông tin sản phẩm
+                const cartItem = {
+                    id: Date.now(), // Tạo ID tạm thời cho localStorage
+                    cart_id: 0,
+                    product_detail_id: productDetail.id,
+                    quantity: quantity,
+                    product_detail: {
+                        id: productDetail.id,
+                        name: product.name,
+                        product_id: product.id,
+                        color_id: selectedColor?.id || 0,
+                        color: selectedColor?.name || '',
+                        size_id: selectedSize?.id || 0,
+                        size: selectedSize?.name || '',
+                        material_id: selectedMaterial?.id || 0,
+                        material: selectedMaterial?.name || '',
+                        stock: productDetail.stock,
+                        price: productDetail.price,
+                        image_url: productDetail.image_url || product.image_url || '',
+                        status: productDetail.status
+                    }
+                };
+                cartContext.addToCart(productDetail.id, quantity, cartItem);
+                toast.success(isAuthenticated ? "Thêm sản phẩm vào giỏ hàng thành công!" : "Đã lưu sản phẩm vào giỏ hàng tạm thời!");
             }
             // Reset số lượng về 1 sau khi thêm vào giỏ hàng
             setQuantity(1);

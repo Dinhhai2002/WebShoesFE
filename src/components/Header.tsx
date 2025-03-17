@@ -27,7 +27,7 @@ import HistoryIcon from "@mui/icons-material/History";
 import { debounce } from "lodash";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { Link, NavLink as RouterLink } from "react-router-dom";
+import { Link, NavLink as RouterLink, useNavigate } from "react-router-dom";
 import { routes } from "../routes/routes";
 
 const Header: React.FC = () => {
@@ -36,6 +36,8 @@ const Header: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const { isAuthenticated, logout } = useAuth();
+  const cartContext = useContext(CartContext);
+  const navigate = useNavigate();
 
   // Fake API call
   const fetchSuggestions = async (query: string) => {
@@ -77,6 +79,7 @@ const Header: React.FC = () => {
   const handleSuggestionClick = (suggestion: string) => {
     setSearchTerm(suggestion);
     setSuggestions([]);
+    handleSearch(suggestion);
   };
 
   const handleCartMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -87,11 +90,36 @@ const Header: React.FC = () => {
     setCartAnchorEl(null);
   };
 
+  const handleLogout = () => {
+    // Xóa dữ liệu giỏ hàng từ localStorage
+    localStorage.removeItem('localCart');
+    localStorage.removeItem('cartId');
+    
+    // Reset cart state
+    if (cartContext) {
+      cartContext.setCart([]);
+    }
+    
+    // Gọi hàm logout từ AuthContext
+    logout();
+    handleMenuClose();
+  };
+
+  const handleSearch = (term: string) => {
+    if (term.trim()) {
+      navigate(`/products?search=${encodeURIComponent(term.trim())}`);
+    }
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleSearch(searchTerm);
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   };
-
-  const cartContext = useContext(CartContext);
 
   if (!cartContext) {
     // Xử lý trường hợp context không được cung cấp
@@ -135,10 +163,14 @@ const Header: React.FC = () => {
             size="small"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton color="primary">
+                  <IconButton 
+                    color="primary"
+                    onClick={() => handleSearch(searchTerm)}
+                  >
                     <SearchIcon />
                   </IconButton>
                 </InputAdornment>
@@ -295,7 +327,7 @@ const Header: React.FC = () => {
                 <MenuItem component={RouterLink} to={routes.OrderHistory} onClick={handleMenuClose}>
                   <HistoryIcon sx={{ mr: 1 }} /> Lịch sử đơn hàng
                 </MenuItem>
-                <MenuItem onClick={logout}>
+                <MenuItem onClick={handleLogout}>
                   <LogoutIcon sx={{ mr: 1 }} /> Đăng xuất
                 </MenuItem>
               </Menu>

@@ -2,6 +2,7 @@ import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import cartApi from '../services/API/CartApi';
 import { useAuth } from './AuthContext';
 import { CartDetail, CartDetailRequest } from '../services/API/CartApi';
+import { toast } from 'react-toastify';
 
 // Định nghĩa giao diện cho sản phẩm chi tiết
 interface ProductDetail {
@@ -32,9 +33,11 @@ interface CartItem {
 // Định nghĩa giao diện cho context
 interface CartContextType {
   cart: CartDetail[];
-  addToCart: (productDetailId: number, quantity: number) => Promise<void>;
+  setCart: (cart: CartDetail[]) => void;
+  addToCart: (productDetailId: number, quantity: number, cartItem?: CartItem) => Promise<void>;
   removeFromCart: (id: number) => Promise<void>;
   updateQuantity: (id: number, quantity: number) => Promise<void>;
+  migrateLocalCartToServer: () => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -69,7 +72,62 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [cart, isAuthenticated]);
 
-  const addToCart = async (productDetailId: number, quantity: number) => {
+  const migrateLocalCartToServer = async () => {
+    try {
+      setLoading(true);
+      const localCart = localStorage.getItem('localCart');
+      if (!localCart) return;
+
+      const localCartItems: CartItem[] = JSON.parse(localCart);
+      const cartId = localStorage.getItem("cartId");
+      if (!cartId) {
+        throw new Error("Cart ID not found");
+      }
+
+      // Xử lý từng sản phẩm trong giỏ hàng local
+      for (const localItem of localCartItems) {
+        // Kiểm tra sản phẩm đã tồn tại trong giỏ hàng server chưa
+        const existingItem = cartItems.find(item => item.product_detail.id === localItem.product_detail.id);
+        
+        if (existingItem) {
+          // Nếu đã tồn tại, cập nhật số lượng
+          const newQuantity = existingItem.quantity + localItem.quantity;
+          await cartApi.update(existingItem.id, {
+            product_detail_id: existingItem.product_detail_id,
+            quantity: newQuantity
+          });
+        } else {
+          // Nếu chưa tồn tại, thêm mới
+          const request: CartDetailRequest = {
+            cart_id: parseInt(cartId),
+            product_detail_id: localItem.product_detail_id,
+            quantity: localItem.quantity
+          };
+          await cartApi.create(request);
+        }
+      }
+
+      // Sau khi đã chuyển đổi thành công, cập nhật lại giỏ hàng từ server
+      const updatedCartResponse = await cartApi.getCartDetails(parseInt(cartId));
+      const updatedCart = updatedCartResponse.data.list;
+
+      // Cập nhật state với dữ liệu mới từ server
+      setCart(updatedCart);
+      setCartItems(updatedCart);
+
+      // Xóa giỏ hàng local sau khi đã chuyển đổi thành công
+      localStorage.removeItem('localCart');
+      toast.success("Đã chuyển giỏ hàng tạm thời vào giỏ hàng chính!");
+    } catch (err) {
+      setError('Error migrating local cart to server');
+      console.error('Error migrating cart:', err);
+      toast.error("Không thể chuyển giỏ hàng tạm thời vào giỏ hàng chính!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addToCart = async (productDetailId: number, quantity: number, cartItem?: CartItem) => {
     try {
       setLoading(true);
       if (isAuthenticated) {
@@ -91,16 +149,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCart(prevCart => [...prevCart, response.data]);
         setCartItems(prevItems => [...prevItems, response.data]);
       } else {
-        // Nếu chưa đăng nhập, thêm vào localStorage
-        const newItem: CartDetail = {
-          id: Date.now(), // Tạo ID tạm thời
-          cart_id: 0,
-          product_detail_id: productDetailId,
-          quantity: quantity,
-          product_detail: {} as ProductDetail // Sẽ được cập nhật sau khi đăng nhập
-        };
-        
-        setCart(prevCart => [...prevCart, newItem]);
+        // Nếu chưa đăng nhập, thêm vào localStorage với thông tin đầy đủ
+        if (!cartItem) {
+          throw new Error("Cart item information is required for unauthenticated users");
+        }
+        setCart(prevCart => [...prevCart, cartItem]);
       }
     } catch (err) {
       setError('Error adding item to cart');
@@ -172,7 +225,16 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, loading, error }}>
+    <CartContext.Provider value={{ 
+      cart, 
+      setCart,
+      addToCart, 
+      removeFromCart, 
+      updateQuantity, 
+      migrateLocalCartToServer,
+      loading, 
+      error 
+    }}>
       {children}
     </CartContext.Provider>
   );

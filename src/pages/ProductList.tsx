@@ -25,9 +25,13 @@ import {
   Tooltip,
 } from "@mui/material";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import productDetailApi, { ProductDetail } from "../services/API/ProductDetailApi";
-import categoryApi, { Category } from "../services/API/CategoryApi";
-import brandApi, { Brand } from "../services/API/BrandApi";
+import authenticationApiService from "../services/API/AuthenticationApiService";
+import { ProductDetail } from "../services/API/ProductDetailApi";
+import { Category } from "../services/API/CategoryApi";
+import { Brand } from "../services/API/BrandApi";
+import { Size } from "../services/API/SizeApi";
+import { Material } from "../services/API/MaterialApi";
+import { Color } from "../services/API/ColorApi";
 import { toast } from "react-toastify";
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -45,6 +49,9 @@ const ProductList = () => {
   const [products, setProducts] = useState<ProductDetail[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [sizes, setSizes] = useState<Size[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalRecords, setTotalRecords] = useState(0);
   const [page, setPage] = useState(1);
@@ -57,16 +64,25 @@ const ProductList = () => {
     material_id: -1,
     category_id: -1,
     brand_id: -1,
-    status: 1, // Chỉ lấy sản phẩm đang active
+    status: 1,
+    key_search: "",
   });
 
-  // Đọc và xử lý query parameters khi component mount
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category');
+    const searchFromUrl = searchParams.get('search');
+    
     if (categoryFromUrl) {
       setFilters(prev => ({
         ...prev,
         category_id: parseInt(categoryFromUrl)
+      }));
+    }
+    
+    if (searchFromUrl) {
+      setFilters(prev => ({
+        ...prev,
+        key_search : searchFromUrl
       }));
     }
   }, [location.search]);
@@ -74,6 +90,9 @@ const ProductList = () => {
   useEffect(() => {
     fetchCategories();
     fetchBrands();
+    fetchSizes();
+    fetchMaterials();
+    fetchColors();
   }, []);
 
   useEffect(() => {
@@ -82,11 +101,10 @@ const ProductList = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoryApi.findAll({
+      const response = await authenticationApiService.getCategories({
         status: 1,
         page: 1,
-        limit: 100,
-        keySearch: ""
+        limit: 100
       });
       setCategories(response.data.list);
     } catch (error) {
@@ -96,7 +114,7 @@ const ProductList = () => {
 
   const fetchBrands = async () => {
     try {
-      const response = await brandApi.findAll({
+      const response = await authenticationApiService.getBrands({
         status: 1,
         page: 1,
         limit: 100
@@ -107,10 +125,49 @@ const ProductList = () => {
     }
   };
 
+  const fetchSizes = async () => {
+    try {
+      const response = await authenticationApiService.getSizes({
+        status: 1,
+        page: 1,
+        limit: 100
+      });
+      setSizes(response.data.list);
+    } catch (error) {
+      console.error("Error fetching sizes:", error);
+    }
+  };
+
+  const fetchMaterials = async () => {
+    try {
+      const response = await authenticationApiService.getMaterials({
+        status: 1,
+        page: 1,
+        limit: 100
+      });
+      setMaterials(response.data.list);
+    } catch (error) {
+      console.error("Error fetching materials:", error);
+    }
+  };
+
+  const fetchColors = async () => {
+    try {
+      const response = await authenticationApiService.getColors({
+        status: 1,
+        page: 1,
+        limit: 100
+      });
+      setColors(response.data.list);
+    } catch (error) {
+      console.error("Error fetching colors:", error);
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await productDetailApi.findAll({
+      const response = await authenticationApiService.getProductDetails({
         ...filters,
         page: page,
         limit: itemsPerPage
@@ -131,7 +188,7 @@ const ProductList = () => {
     
     // Cập nhật URL khi thay đổi filter
     const newSearchParams = new URLSearchParams(searchParams);
-    if (value === -1) {
+    if (value === -1 || value === "") {
       newSearchParams.delete(field);
     } else {
       newSearchParams.set(field, value.toString());
@@ -259,9 +316,11 @@ const ProductList = () => {
                 label="Màu sắc"
               >
                 <MenuItem value={-1}>Tất cả</MenuItem>
-                <MenuItem value={1}>Đen</MenuItem>
-                <MenuItem value={2}>Trắng</MenuItem>
-                <MenuItem value={3}>Đỏ</MenuItem>
+                {colors.map(color => (
+                  <MenuItem key={color.id} value={color.id}>
+                    {color.name}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 
@@ -273,10 +332,11 @@ const ProductList = () => {
                 label="Size"
               >
                 <MenuItem value={-1}>Tất cả</MenuItem>
-                <MenuItem value={1}>39</MenuItem>
-                <MenuItem value={2}>40</MenuItem>
-                <MenuItem value={3}>41</MenuItem>
-                <MenuItem value={4}>42</MenuItem>
+                {sizes.map(size => (
+                  <MenuItem key={size.id} value={size.id}>
+                    {size.name}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 
@@ -288,9 +348,11 @@ const ProductList = () => {
                 label="Chất liệu"
               >
                 <MenuItem value={-1}>Tất cả</MenuItem>
-                <MenuItem value={1}>Da</MenuItem>
-                <MenuItem value={2}>Vải</MenuItem>
-                <MenuItem value={3}>Canvas</MenuItem>
+                {materials.map(material => (
+                  <MenuItem key={material.id} value={material.id}>
+                    {material.name}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Stack>
