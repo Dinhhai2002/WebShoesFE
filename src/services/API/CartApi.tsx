@@ -1,5 +1,6 @@
 import { AxiosResponse } from "axios";
 import BaseApiService from "./BaseApiService";
+import { toast } from "react-toastify";
 
 export interface CartDetail {
     id: number;
@@ -70,8 +71,14 @@ class CartApi extends BaseApiService {
                     limit: params?.limit
                 }
             });
+            
+            if (response.data.status === 400) {
+                toast.error(response.data.message || "Không thể lấy danh sách giỏ hàng");
+                throw new Error(response.data.message);
+            }
+            
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             throw error;
         }
     }
@@ -80,8 +87,14 @@ class CartApi extends BaseApiService {
     async findOne(id: number): Promise<ApiResponse<CartDetail>> {
         try {
             const response: AxiosResponse<ApiResponse<CartDetail>> = await this.api.get(`/cart-detail/${id}`);
+            
+            if (response.data.status === 400) {
+                toast.error(response.data.message || "Không thể lấy thông tin sản phẩm trong giỏ hàng");
+                throw new Error(response.data.message);
+            }
+            
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             throw error;
         }
     }
@@ -90,8 +103,15 @@ class CartApi extends BaseApiService {
     async create(data: CartDetailRequest): Promise<ApiResponse<CartDetail>> {
         try {
             const response: AxiosResponse<ApiResponse<CartDetail>> = await this.api.post("/cart-detail/create", data);
+            
+            if (response.data.status === 400) {
+                toast.error(response.data.message || "Không thể thêm sản phẩm vào giỏ hàng");
+                throw new Error(response.data.message);
+            }
+            
+            toast.success("Thêm sản phẩm vào giỏ hàng thành công");
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             throw error;
         }
     }
@@ -100,8 +120,19 @@ class CartApi extends BaseApiService {
     async update(id: number, data: CartDetailRequest): Promise<ApiResponse<CartDetail>> {
         try {
             const response: AxiosResponse<ApiResponse<CartDetail>> = await this.api.post(`/cart-detail/${id}/update`, data);
+            
+            if (response.data.status === 400) {
+                toast.error(response.data.message || "Không thể cập nhật giỏ hàng");
+                throw new Error(response.data.message);
+            }
+            
+            if (data.quantity === 0) {
+                toast.success("Xóa sản phẩm khỏi giỏ hàng thành công");
+            } else {
+                toast.success("Cập nhật số lượng sản phẩm thành công");
+            }
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             throw error;
         }
     }

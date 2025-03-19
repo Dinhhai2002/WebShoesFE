@@ -67,10 +67,18 @@ const OrderHistory: React.FC = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
+      const user = localStorage.getItem('user');
+      if (!user) {
+        toast.error('Vui lòng đăng nhập để xem lịch sử đơn hàng');
+        return;
+      }
+
+      const userData = JSON.parse(user);
       const response = await orderApi.findAll({
         status: statusFilter,
         page: page,
-        limit: itemsPerPage
+        limit: itemsPerPage,
+        user_id: userData.id
       });
       
       const formattedOrders: Order[] = response.data.list.map((order: any) => ({

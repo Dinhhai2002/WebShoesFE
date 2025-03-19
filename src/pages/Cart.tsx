@@ -16,13 +16,17 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  CircularProgress
 } from "@mui/material";
 import { Add, Remove, Delete } from "@mui/icons-material";
 import { useNavigate, Link } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { CartDetail } from "../services/API/CartApi";
+import productDetailApi from "../services/API/ProductDetailApi";
+import { ProductDetail } from "../services/API/ProductDetailApi";
+import { toast } from 'react-toastify';
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +35,8 @@ const Cart: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartDetail[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<ProductDetail[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -49,6 +55,38 @@ const Cart: React.FC = () => {
     }
   }, [isAuthenticated, cartContext]);
 
+  // Fetch related products when cart items change
+  useEffect(() => {
+    const fetchRelatedProducts = async () => {
+      if (cartItems.length > 0) {
+        try {
+          setLoadingRelated(true);
+          const firstItem = cartItems[0];
+          const response = await productDetailApi.findAll({
+            category_id: firstItem.product_detail.category_id,
+            status: 1,
+            limit: 4,
+            page: 1
+          });
+          
+          // Filter out products that are already in the cart
+          const filteredProducts = response.data.list.filter(product => 
+            !cartItems.some(cartItem => cartItem.product_detail.id === product.id)
+          );
+          
+          setRelatedProducts(filteredProducts.slice(0, 4));
+        } catch (error) {
+          console.error("Error fetching related products:", error);
+          toast.error("Không thể tải danh sách sản phẩm liên quan");
+        } finally {
+          setLoadingRelated(false);
+        }
+      }
+    };
+
+    fetchRelatedProducts();
+  }, [cartItems]);
+
   if (!cartContext) {
     // Xử lý trường hợp context không được cung cấp
     return null;
@@ -57,10 +95,14 @@ const Cart: React.FC = () => {
   const { removeFromCart, updateQuantity } = cartContext;
 
   // Handle quantity increase
-  const increaseQuantity = (id: number) => {
-    const item = cartItems.find((item) => item.id === id);
-    if (item) {
-      updateQuantity(id, item.quantity + 1);
+  const increaseQuantity = async (id: number) => {
+    try {
+      const item = cartItems.find((item) => item.id === id);
+      if (item) {
+        await updateQuantity(id, item.quantity + 1);
+      }
+    } catch (error) {
+      // Error is already handled in API
     }
   };
 
@@ -74,26 +116,41 @@ const Cart: React.FC = () => {
     setSelectedItemId(null);
   };
 
-  const handleRemoveConfirmed = () => {
+  const handleRemoveConfirmed = async () => {
     if (selectedItemId !== null) {
-      removeFromCart(selectedItemId);
-    }
-    handleDialogClose();
-  };
-
-  const decreaseQuantity = (id: number) => {
-    const item = cartItems.find((item) => item.id === id);
-    if (item) {
-      if (item.quantity > 1) {
-        updateQuantity(id, item.quantity - 1);
-      } else {
-        handleDialogOpen(id);
+      try {
+        await removeFromCart(selectedItemId);
+        handleDialogClose();
+      } catch (error) {
+        // Error is already handled in API
       }
     }
   };
 
-  const removeItem = (id: number) => {
-    handleDialogOpen(id);
+  // Handle quantity decrease
+  const decreaseQuantity = async (id: number) => {
+    try {
+      const item = cartItems.find((item) => item.id === id);
+      if (item) {
+        if (item.quantity > 1) {
+          await updateQuantity(id, item.quantity - 1);
+        } else {
+          handleDialogOpen(id);
+        }
+      }
+    } catch (error) {
+      // Error is already handled in API
+    }
+  };
+
+  // Handle remove item
+  const removeItem = async (id: number) => {
+    try {
+      await removeFromCart(id);
+      handleDialogClose();
+    } catch (error) {
+      // Error is already handled in API
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -223,28 +280,90 @@ const Cart: React.FC = () => {
       </Dialog>
 
       {/* Related Products */}
-      <Typography variant="h5" sx={{ mt: 5 }}>
-        🔥 You Might Also Like
-      </Typography>
-      <Grid container spacing={2} sx={{ mt: 2 }}>
-        {[
-          { id: 3, name: "Puma RS-X", price: 140, image: "https://imgwebikenet-8743.kxcdn.com/catalogue/10063/bl420mru-3_s.jpg" },
-          { id: 4, name: "Jordan 1 High", price: 180, image: "https://imgwebikenet-8743.kxcdn.com/catalogue/10063/bl420mru-3_s.jpg" },
-        ].map((product) => (
-          <Grid item xs={6} md={3} key={product.id}>
-            <Card>
-              <CardMedia component="img" height="140" image={product.image} alt={product.name} />
-              <CardContent>
-                <Typography variant="h6">{product.name}</Typography>
-                <Typography>${product.price}</Typography>
-                <Button variant="contained" fullWidth>
-                  Add to Cart
-                </Button>
-              </CardContent>
-            </Card>
+      {cartItems.length > 0 && (
+        <>
+          <Typography variant="h5" sx={{ mt: 5 }}>
+            🔥 You Might Also Like
+          </Typography>
+          <Grid container spacing={2} sx={{ mt: 2 }}>
+            {loadingRelated ? (
+              <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
+                <CircularProgress />
+              </Grid>
+            ) : relatedProducts.length > 0 ? (
+              relatedProducts.map((product) => (
+                <Grid item xs={6} md={3} key={product.id}>
+                  <Card>
+                    <Link 
+                      to={`/product/${product.product_id}`}
+                      state={{
+                        colorId: product.color_id,
+                        sizeId: product.size_id,
+                        materialId: product.material_id,
+                        selectedProduct: product
+                      }}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <CardMedia 
+                        component="img" 
+                        height="140" 
+                        image={product.image_url || '/placeholder.png'} 
+                        alt={product.name} 
+                      />
+                    </Link>
+                    <CardContent>
+                      <Typography 
+                        variant="h6" 
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          wordWrap: 'break-word',
+                          lineHeight: 1.2,
+                          height: '2.4em'
+                        }}
+                      >
+                        {product.name}
+                      </Typography>
+                      <Typography color="primary" sx={{ fontWeight: 'bold' }}>
+                        {formatCurrency(product.price)}
+                      </Typography>
+                      <Link 
+                      to={`/product/${product.product_id}`}
+                      state={{
+                        colorId: product.color_id,
+                        sizeId: product.size_id,
+                        materialId: product.material_id,
+                        selectedProduct: product
+                      }}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button 
+                        variant="contained" 
+                        fullWidth 
+                        // onClick={() => handleAddToCart(product)}
+                        disabled={product.stock <= 0}
+                        sx={{ mt: 1 }}
+                      >
+                        {/* {product.stock > 0 ? "Add to Cart" : "Out of Stock"} */}
+                        Chi tiết sản phẩm
+                      </Button> 
+                    </Link>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            ) : (
+              <Grid item xs={12}>
+                <Typography variant="body1" color="text.secondary" textAlign="center">
+                  Không tìm thấy sản phẩm liên quan
+                </Typography>
+              </Grid>
+            )}
           </Grid>
-        ))}
-      </Grid>
+        </>
+      )}
     </Container>
   );
 };

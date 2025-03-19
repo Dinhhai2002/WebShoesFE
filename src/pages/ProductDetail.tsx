@@ -177,7 +177,6 @@ const ProductDetailPage: React.FC = () => {
             if (existingItem) {
                 // Nếu đã có, tăng số lượng lên theo số lượng đã chọn
                 cartContext.updateQuantity(existingItem.id, existingItem.quantity + quantity);
-                toast.success("Đã cập nhật số lượng sản phẩm trong giỏ hàng!");
             } else {
                 // Nếu chưa có, thêm mới với số lượng đã chọn và đầy đủ thông tin sản phẩm
                 const cartItem = {
@@ -202,12 +201,11 @@ const ProductDetailPage: React.FC = () => {
                     }
                 };
                 cartContext.addToCart(productDetail.id, quantity, cartItem);
-                toast.success(isAuthenticated ? "Thêm sản phẩm vào giỏ hàng thành công!" : "Đã lưu sản phẩm vào giỏ hàng tạm thời!");
             }
-            // Reset số lượng về 1 sau khi thêm vào giỏ hàng
+            // Reset số lượng về 1 sau khi thêm vào giỏ hàng thành công
             setQuantity(1);
         } catch (error) {
-            toast.error("Không thể thêm sản phẩm vào giỏ hàng!");
+            // Error is already handled in API
         }
     };
 

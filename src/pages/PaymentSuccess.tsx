@@ -24,22 +24,33 @@ const PaymentSuccess: React.FC = () => {
         const vnp_ResponseCode = searchParams.get('vnp_ResponseCode');
         const vnp_TxnRef = searchParams.get('vnp_TxnRef');
         const orderId = searchParams.get('vnp_OrderInfo')?.split(':')[1];
-
-        if (!orderId) {
-          setIsSuccess(false);
-          toast.error('Không tìm thấy thông tin đơn hàng!');
-          return;
-        }
+        const isCod = searchParams.get('cod') === 'true';
 
         // Đánh dấu là đã cập nhật để tránh gọi API nhiều lần
         hasUpdatedRef.current = true;
 
-        if (vnp_ResponseCode === '00') {
+        if (isCod) {
+          // Trường hợp thanh toán COD
+          setIsSuccess(true);
+          toast.success('Đặt hàng thành công!');
+        } else if (vnp_ResponseCode === '00') {
+          // Trường hợp thanh toán online thành công
+          if (!orderId) {
+            setIsSuccess(false);
+            toast.error('Không tìm thấy thông tin đơn hàng!');
+            return;
+          }
           // Update payment status to PAID
           await orderApi.changePaymentStatus(parseInt(orderId), PaymentStatusEnum.PAID);
           setIsSuccess(true);
           toast.success('Thanh toán thành công!');
         } else {
+          // Trường hợp thanh toán online thất bại
+          if (!orderId) {
+            setIsSuccess(false);
+            toast.error('Không tìm thấy thông tin đơn hàng!');
+            return;
+          }
           // Update payment status to FAILED
           await orderApi.changePaymentStatus(parseInt(orderId), PaymentStatusEnum.FAILED);
           setIsSuccess(false);
@@ -106,10 +117,12 @@ const PaymentSuccess: React.FC = () => {
               }}
             />
             <Typography variant="h4" gutterBottom>
-              Thanh toán thành công!
+              {searchParams.get('cod') === 'true' ? 'Đặt hàng thành công!' : 'Thanh toán thành công!'}
             </Typography>
             <Typography variant="body1" color="text.secondary" paragraph>
-              Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.
+              {searchParams.get('cod') === 'true' 
+                ? 'Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.'
+                : 'Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.'}
             </Typography>
           </>
         ) : (

@@ -42,7 +42,7 @@ const Checkout: React.FC = () => {
   const [vouchers, setVouchers] = useState<VoucherResponse[]>([]);
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherResponse | null>(null);
   const [discount, setDiscount] = useState(0);
-  const { cart } = useContext(CartContext);
+  const { cart, resetCart } = useContext(CartContext);
   const navigate = useNavigate();
 
   // Fetch vouchers
@@ -112,9 +112,10 @@ const Checkout: React.FC = () => {
       const response = await orderApi.create(orderRequest);
 
       if (paymentMethod === "cod") {
-        // For COD, redirect to success page directly
-        navigate("/payment-success");
-        toast.success("Đặt hàng thành công!");
+        // Reset cart after successful order creation
+        resetCart();
+        // For COD, redirect to success page with cod=true parameter
+        navigate("/payment-success?cod=true");
       } else {
         // For online payment, redirect to payment URL
         if (response.data) {

@@ -38,6 +38,7 @@ interface CartContextType {
   removeFromCart: (id: number) => Promise<void>;
   updateQuantity: (id: number, quantity: number) => Promise<void>;
   migrateLocalCartToServer: () => Promise<void>;
+  resetCart: () => void;
   loading: boolean;
   error: string | null;
 }
@@ -71,6 +72,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem('localCart', JSON.stringify(cart));
     }
   }, [cart, isAuthenticated]);
+
+  const resetCart = () => {
+    setCart([]);
+    if (isAuthenticated) {
+      setCartItems([]);
+    } else {
+      localStorage.removeItem('localCart');
+    }
+  };
 
   const migrateLocalCartToServer = async () => {
     try {
@@ -232,6 +242,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       removeFromCart, 
       updateQuantity, 
       migrateLocalCartToServer,
+      resetCart,
       loading, 
       error 
     }}>
