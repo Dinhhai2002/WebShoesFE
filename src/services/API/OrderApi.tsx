@@ -43,6 +43,13 @@ export interface Order {
     status: StatusOrderEnum;
     created_at: string;
     order_detail: OrderDetail[];
+    address_id: number;
+    shipping_name: string;
+    shipping_phone: string;
+    shipping_ward_id: number;
+    shipping_district_id: number;
+    shipping_city_id: number;
+    shipping_address: string;
 }
 
 interface OrderQueryParams {
@@ -64,6 +71,7 @@ interface CreateOrderRequest {
     discount_amount: number;
     total_price: number;
     payment_method: number;
+    address_id: number;
 }
 
 interface ChangeStatusRequest {
@@ -124,9 +132,9 @@ class OrderApi extends BaseApiService {
     }
 
     // Create a new order
-    async create(order: CreateOrderRequest): Promise<ApiResponse<string>> {
+    async create(order: CreateOrderRequest): Promise<ApiResponse<Order | string>> {
         try {
-            const response: AxiosResponse<ApiResponse<string>> = await this.api.post("/order/create", order);
+            const response: AxiosResponse<ApiResponse<Order | string>> = await this.api.post("/order/create", order);
             return response.data;
         } catch (error) {
             throw error;

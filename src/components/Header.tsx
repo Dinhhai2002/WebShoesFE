@@ -38,6 +38,16 @@ const Header: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
   const cartContext = useContext(CartContext);
   const navigate = useNavigate();
+  const [userAvatar, setUserAvatar] = useState<string>('');
+
+  useEffect(() => {
+    // Lấy thông tin user từ localStorage khi component mount
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const userData = JSON.parse(userStr);
+      setUserAvatar(userData.avatar_url || '');
+    }
+  }, []);
 
   // Fake API call
   const fetchSuggestions = async (query: string) => {
@@ -314,14 +324,19 @@ const Header: React.FC = () => {
             /* Nếu đã login */
             <>
               <IconButton onClick={handleMenuOpen}>
-                <Avatar sx={{ bgcolor: "primary.main" }}>U</Avatar>
+                <Avatar 
+                  src={userAvatar}
+                  sx={{ bgcolor: "primary.main" }}
+                >
+                  {userAvatar ? '' : 'U'}
+                </Avatar>
               </IconButton>
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
               >
-                <MenuItem>
+                <MenuItem component={RouterLink} to="/profile" onClick={handleMenuClose}>
                   <AccountCircleIcon sx={{ mr: 1 }} /> Tài khoản
                 </MenuItem>
                 <MenuItem component={RouterLink} to={routes.OrderHistory} onClick={handleMenuClose}>

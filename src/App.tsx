@@ -22,6 +22,7 @@ import OTPVerification from "./pages/OTPVerification";
 import { AuthProvider } from "./context/AuthContext";
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import UserProfile from './pages/UserProfile';
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
                   <Route path="/authentication/verify-otp" element={<OTPVerification />} />
                   <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
                   <Route path="/authentication/reset-password" element={<ResetPassword />} />
+                  <Route path="/profile" element={<UserProfile />} />
                   <Route path="/product/:id" element={<Product />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
