@@ -17,7 +17,11 @@ import { CartProvider } from "./context/CartContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Login from "./pages/Login/Login";
+import Register from "./pages/Register";
+import OTPVerification from "./pages/OTPVerification";
 import { AuthProvider } from "./context/AuthContext";
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -48,6 +52,10 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/authentication/login" element={<Login />} />
+                  <Route path="/authentication/register" element={<Register />} />
+                  <Route path="/authentication/verify-otp" element={<OTPVerification />} />
+                  <Route path="/authentication/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/authentication/reset-password" element={<ResetPassword />} />
                   <Route path="/product/:id" element={<Product />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />

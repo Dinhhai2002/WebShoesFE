@@ -15,6 +15,7 @@ import { Material } from "../services/API/MaterialApi";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import reviewApi, { Review } from "../services/API/ReviewApi";
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -38,6 +39,8 @@ const ProductDetailPage: React.FC = () => {
     const cartContext = useContext(CartContext);
     const { isAuthenticated } = useAuth();
     const [quantity, setQuantity] = useState(1);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [reviewLoading, setReviewLoading] = useState(false);
 
     // Fetch product and options data
     useEffect(() => {
@@ -92,6 +95,34 @@ const ProductDetailPage: React.FC = () => {
             fetchData();
         }
     }, [id, initialOptions.colorId, initialOptions.sizeId, initialOptions.materialId]);
+
+    // Fetch reviews for the product
+    useEffect(() => {
+        const fetchReviews = async () => {
+            if (!product) return;
+
+            try {
+                setReviewLoading(true);
+                const response = await reviewApi.findAll({
+                    product_id: product.id,
+                    status: 1,
+                    page: 1,
+                    limit: 10
+                });
+
+                if (response.data) {
+                    setReviews(response.data.list);
+                }
+            } catch (err) {
+                console.error("Error fetching reviews:", err);
+                toast.error("Không thể tải danh sách đánh giá");
+            } finally {
+                setReviewLoading(false);
+            }
+        };
+
+        fetchReviews();
+    }, [product]);
 
     // Fetch product detail when selections change
     useEffect(() => {
@@ -337,7 +368,11 @@ const ProductDetailPage: React.FC = () => {
             </Grid>
 
             {/* Block đánh giá sản phẩm */}
-            <ProductReview />
+            <ProductReview 
+                reviews={reviews} 
+                loading={reviewLoading} 
+                productId={product?.id} 
+            />
         </Box>
     );
 };

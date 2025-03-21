@@ -8,6 +8,8 @@ import { Size } from "./SizeApi";
 import { Material } from "./MaterialApi";
 import { Color } from "./ColorApi";
 import { ProductDetail } from "./ProductDetailApi";
+import { OtpEnum } from "../../utils/enum/OtpEnum";
+import { toast } from "react-toastify";
 
 const prefix = "authentication";
 
@@ -17,10 +19,85 @@ interface ListResponse<T> {
     total_record: number;
 }
 
+interface RegisterRequest {
+  user_name: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  password: string;
+  gender: number;
+  birthday: string;
+  ward_id: number;
+  district_id: number;
+  city_id: number;
+  full_address: string;
+}
+
+interface UserResponse {
+  id: number;
+  user_name: string;
+  full_name: string;
+  email: string;
+  avatar_id: number;
+  avatar_url: string;
+  phone: string;
+  gender: number;
+  birthday: string;
+  ward_id: number;
+  city_id: number;
+  district_id: number;
+  full_address: string;
+  access_token: string;
+  is_login: number;
+  role: number;
+  is_active: number;
+  is_google: number;
+  point_promotion: number;
+  cart_id: number;
+}
+
+interface CityResponse {
+  id: number;
+  country_id: number;
+  name: string;
+  code: string;
+  status: number;
+}
+
+interface DistrictResponse {
+  id: number;
+  city_id: number;
+  name: string;
+  code: string;
+  status: number;
+}
+
+interface WardResponse {
+  id: number;
+  district_id: number;
+  name: string;
+  code: string;
+  status: number;
+}
+
 interface ApiResponse<T> {
-    status: number;
-    message: string;
-    data: T;
+  status: number;
+  message: string;
+  data: T;
+}
+
+interface OtpRegisterRequest {
+  user_name: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  password: string;
+  gender: number;
+  birthday: string;
+  ward_id: number;
+  district_id: number;
+  city_id: number;
+  full_address: string;
 }
 
 
@@ -35,10 +112,16 @@ class AuthenticationApiService extends BaseApiService {
           password,
         }
       );
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Đăng nhập thất bại");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
       return response.data;
     } catch (error: any) {
-      // throw new Error(error.message);
+      throw error;
     }
   }
 
@@ -56,87 +139,56 @@ class AuthenticationApiService extends BaseApiService {
           fullname,
         }
       );
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Đăng nhập Google thất bại");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
       return response.data;
     } catch (error: any) {
-      // throw new Error(error.message);
+      throw error;
     }
   }
 
-  public async Register(
-    user_name: any,
-    full_name: any,
-    email: any,
-    gender: any,
-    phone: any,
-    password: any,
-    birthday: any,
-    city_id: any,
-    district_id: any,
-    ward_id: any,
-    full_address: any
-  ): Promise<any> {
+  public async Register(data: RegisterRequest): Promise<ApiResponse<UserResponse>> {
     try {
-      const response: any = await this.api.post(
+      const response = await this.api.post(
         `/authentication/register`,
-        {
-          user_name,
-          full_name,
-          email,
-          gender,
-          phone,
-          password,
-          birthday,
-          city_id,
-          district_id,
-          ward_id,
-          full_address,
-        }
+        data
       );
-
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Đăng ký thất bại");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
+      toast.success("Đăng ký thành công");
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
-  public async OtpRegister(
-    user_name: any,
-    full_name: any,
-    email: any,
-    phone: any,
-    password: any,
-    gender: number,
-    birthday: any,
-    ward_id: number,
-    district_id: number,
-    city_id: number,
-    full_address: any
-  ): Promise<any> {
+  public async OtpRegister(data: OtpRegisterRequest): Promise<ApiResponse<number>> {
     try {
-      const response: any = await this.api.post(
-        `/authentication/otp-register`,
-        {
-          user_name,
-          full_name,
-          email,
-          phone,
-          password,
-          gender,
-          birthday,
-          ward_id,
-          district_id,
-          city_id,
-          full_address,
-        }
+      const response = await this.api.post(
+        `/${prefix}/otp-register`,
+        data
       );
-
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Gửi mã OTP thất bại");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
-
+      toast.success("Gửi mã OTP thành công");
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
@@ -149,34 +201,44 @@ class AuthenticationApiService extends BaseApiService {
           email,
         }
       );
-
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Gửi mã OTP thất bại");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
-
+      toast.success("Gửi mã OTP thành công");
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
   public async confirmOtp(
-    user_name: any,
-    email: any,
+    user_name: string,
+    email: string,
     otp: number,
-    type: number
-  ): Promise<any> {
+    type: OtpEnum
+  ): Promise<ApiResponse<any>> {
     try {
-      const response: any = await this.api.post(`/${prefix}/confirm-otp`, {
+      const response = await this.api.post(`/${prefix}/confirm-otp`, {
         user_name,
         email,
         otp,
-        type,
+        type: type.valueOf()
       });
-
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Xác nhận OTP thất bại");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
-
+      toast.success("Xác nhận OTP thành công");
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
@@ -194,53 +256,65 @@ class AuthenticationApiService extends BaseApiService {
           confirm_password,
         }
       );
-
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Đặt lại mật khẩu thất bại");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
-
+      toast.success("Đặt lại mật khẩu thành công");
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
-  public async getAllCity(): Promise<any> {
+  public async getAllCity(): Promise<ApiResponse<CityResponse[]>> {
     try {
-      const response: any = await this.api.get(
-        `/authentication/get-all-city`
-      );
-
+      const response = await this.api.get(`/${prefix}/get-all-city`);
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Không thể tải danh sách tỉnh/thành phố");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
-
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
-  public async findDistrictByCityId(id: number): Promise<any> {
+  public async findDistrictByCityId(id: number): Promise<ApiResponse<DistrictResponse[]>> {
     try {
-      const response: any = await this.api.get(
-        `/${prefix}/${id}/get-district-by-city`
-      );
-
+      const response = await this.api.get(`/${prefix}/${id}/get-district-by-city`);
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Không thể tải danh sách quận/huyện");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
-  public async findWardByDistrictId(id: number): Promise<any> {
+  public async findWardByDistrictId(id: number): Promise<ApiResponse<WardResponse[]>> {
     try {
-      const response: any = await this.api.get(
-        `/${prefix}/${id}/get-ward-by-district`
-      );
-
+      const response = await this.api.get(`/${prefix}/${id}/get-ward-by-district`);
+      
+      if (response.data.status === 400) {
+        toast.error(response.data.message || "Không thể tải danh sách phường/xã");
+        throw new Error(response.data.message);
+      }
+      
       handleResponseApi.handleResponse(response);
-
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message);
+      throw error;
     }
   }
 
