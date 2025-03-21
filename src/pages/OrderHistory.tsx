@@ -18,12 +18,19 @@ import {
   CircularProgress,
   Button,
   Pagination,
-  Stack
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Fade
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import orderApi from '../services/API/OrderApi';
 import { StatusOrderEnum } from '../utils/enum/StatusOrderEnum';
 import { PaymentStatusEnum } from '../utils/enum/PaymentStatusEnum';
+import { PaymentMethodEnum } from '../utils/enum/PaymentMethodEnum';
 import { orderStatusConfig, paymentStatusConfig } from '../config/statusConfig';
 import { toast } from 'react-toastify';
 
@@ -47,6 +54,7 @@ interface Order {
   total_price: number;
   status: StatusOrderEnum;
   payment_status: PaymentStatusEnum;
+  payment_method: PaymentMethodEnum;
   order_detail?: OrderDetail[];
 }
 
@@ -59,6 +67,8 @@ const OrderHistory: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -87,6 +97,7 @@ const OrderHistory: React.FC = () => {
         total_price: order.total_price,
         status: order.status,
         payment_status: order.payment_status,
+        payment_method: order.payment_method,
         order_detail: order.order_detail
       }));
       
@@ -122,6 +133,29 @@ const OrderHistory: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleCancelClick = (order: Order) => {
+    setSelectedOrder(order);
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!selectedOrder) return;
+    
+    try {
+      await orderApi.cancelOrder(selectedOrder.id);
+      toast.success('Hủy đơn hàng thành công');
+      setCancelDialogOpen(false);
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(error.response?.data?.messageError || 'Không thể hủy đơn hàng');
+    }
+  };
+
+  const handleCancelClose = () => {
+    setCancelDialogOpen(false);
+    setSelectedOrder(null);
   };
 
   if (loading) {
@@ -237,7 +271,7 @@ const OrderHistory: React.FC = () => {
                       >
                         Chi tiết
                       </Button>
-                      {order.payment_status === PaymentStatusEnum.PENDING && (
+                      {order.payment_status === PaymentStatusEnum.PENDING && order.payment_method === PaymentMethodEnum.VNPAY && (
                         <Button
                           variant="contained"
                           size="small"
@@ -252,8 +286,21 @@ const OrderHistory: React.FC = () => {
                               toast.error('Không thể tạo link thanh toán');
                             }
                           }}
+                          sx={{ mr: 1 }}
                         >
                           Thanh toán
+                        </Button>
+                      )}
+                      {order.status !== StatusOrderEnum.DELIVERED && 
+                       order.status !== StatusOrderEnum.CANCELLED && 
+                       order.status !== StatusOrderEnum.SHIPPED && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="error"
+                          onClick={() => handleCancelClick(order)}
+                        >
+                          Hủy đơn
                         </Button>
                       )}
                     </TableCell>
@@ -281,6 +328,33 @@ const OrderHistory: React.FC = () => {
           </Stack>
         </>
       )}
+
+      {/* Cancel Order Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={handleCancelClose}
+        aria-labelledby="cancel-dialog-title"
+        aria-describedby="cancel-dialog-description"
+        TransitionComponent={Fade}
+        TransitionProps={{ timeout: 300 }}
+      >
+        <DialogTitle id="cancel-dialog-title">
+          Xác nhận hủy đơn hàng
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="cancel-dialog-description">
+            Bạn có chắc chắn muốn hủy đơn hàng #{selectedOrder?.id} không? Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelClose} color="primary">
+            Hủy
+          </Button>
+          <Button onClick={handleCancelConfirm} color="error" variant="contained" autoFocus>
+            Xác nhận hủy
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

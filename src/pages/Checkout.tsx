@@ -19,31 +19,103 @@ import {
   Avatar,
   MenuItem,
   Select,
+  FormHelperText,
+  InputLabel,
 } from "@mui/material";
 import { CartContext } from "../context/CartContext";
 import VoucherBlock from "../components/VoucherBlock";
 import voucherApi, { VoucherResponse } from "../services/API/VoucherApi";
 import { toast } from "react-toastify";
 import orderApi from "../services/API/OrderApi";
+import addressBookApi, { AddressBook, AddressBookRequest } from "../services/API/AddressBookApi";
+import authenticationApiService from "../services/API/AuthenticationApiService";
 import { useNavigate } from "react-router-dom";
 
-// Địa chỉ mặc định
-const defaultAddress = {
-  fullName: "Nguyễn Văn A",
-  address: "123 Đường ABC, Quận 1, TP. Hồ Chí Minh",
-  phone: "0901234567",
-  email: "nguyenvana@example.com",
-};
-
 const Checkout: React.FC = () => {
-  const [formData, setFormData] = useState(defaultAddress);
-  const [useDefaultAddress, setUseDefaultAddress] = useState(true);
+  const [addresses, setAddresses] = useState<AddressBook[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<AddressBook | null>(null);
+  const [newAddress, setNewAddress] = useState<AddressBookRequest>({
+    full_name: "",
+    phone: "",
+    ward_id: 0,
+    ward_name: "",
+    district_id: 0,
+    district_name: "",
+    city_id: 0,
+    city_name: "",
+    full_address: "",
+    is_default: 0
+  });
+  const [useNewAddress, setUseNewAddress] = useState(false);
+  const [addressErrors, setAddressErrors] = useState<{ [key: string]: string }>({});
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [vouchers, setVouchers] = useState<VoucherResponse[]>([]);
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherResponse | null>(null);
   const [discount, setDiscount] = useState(0);
   const { cart, resetCart } = useContext(CartContext);
   const navigate = useNavigate();
+
+  // States for location selection
+  const [cities, setCities] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [wards, setWards] = useState<any[]>([]);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    fetchCities();
+  }, []);
+
+  const fetchCities = async () => {
+    try {
+      const response = await authenticationApiService.getAllCity();
+      setCities(response.data);
+    } catch (error: any) {
+      toast.error('Không thể tải danh sách tỉnh/thành phố');
+    }
+  };
+
+  const fetchDistricts = async (cityId: number) => {
+    try {
+      const response = await authenticationApiService.findDistrictByCityId(cityId);
+      setDistricts(response.data);
+      setWards([]); // Reset wards when city changes
+    } catch (error: any) {
+      toast.error('Không thể tải danh sách quận/huyện');
+    }
+  };
+
+  const fetchWards = async (districtId: number) => {
+    try {
+      const response = await authenticationApiService.findWardByDistrictId(districtId);
+      setWards(response.data);
+    } catch (error: any) {
+      toast.error('Không thể tải danh sách phường/xã');
+    }
+  };
+
+  // Fetch addresses
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      try {
+        const response = await addressBookApi.findAll({
+          keySearch: "",
+          status: 1,
+          page: 1,
+          limit: 10
+        });
+        setAddresses(response.data.list);
+        // Set default address if exists
+        const defaultAddress = response.data.list.find(addr => addr.is_default === 1);
+        if (defaultAddress) {
+          setSelectedAddress(defaultAddress);
+        }
+      } catch (error) {
+        console.error("Error fetching addresses:", error);
+        toast.error("Không thể tải danh sách địa chỉ");
+      }
+    };
+    fetchAddresses();
+  }, []);
 
   // Fetch vouchers
   useEffect(() => {
@@ -98,14 +170,95 @@ const Checkout: React.FC = () => {
     return subtotal - discount;
   };
 
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'city_id' && value) {
+      const selectedCity = cities.find(city => city.id === value);
+      setNewAddress(prev => ({
+        ...prev,
+        city_id: Number(value),
+        city_name: selectedCity?.name || "",
+        district_id: 0,
+        district_name: "",
+        ward_id: 0,
+        ward_name: ""
+      }));
+      fetchDistricts(Number(value));
+    } else if (name === 'district_id' && value) {
+      const selectedDistrict = districts.find(district => district.id === value);
+      setNewAddress(prev => ({
+        ...prev,
+        district_id: Number(value),
+        district_name: selectedDistrict?.name || "",
+        ward_id: 0,
+        ward_name: ""
+      }));
+      fetchWards(Number(value));
+    } else if (name === 'ward_id' && value) {
+      const selectedWard = wards.find(ward => ward.id === value);
+      setNewAddress(prev => ({
+        ...prev,
+        ward_id: Number(value),
+        ward_name: selectedWard?.name || ""
+      }));
+    } else {
+      setNewAddress(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+
+    // Clear error when user starts typing
+    if (addressErrors[name as string]) {
+      setAddressErrors(prev => ({
+        ...prev,
+        [name as string]: ""
+      }));
+    }
+  };
+
+  const validateAddress = () => {
+    const errors: { [key: string]: string } = {};
+    
+    if (!newAddress.full_name) errors.full_name = "Vui lòng nhập họ tên";
+    if (!newAddress.phone) errors.phone = "Vui lòng nhập số điện thoại";
+    if (!newAddress.ward_id) errors.ward_id = "Vui lòng chọn phường/xã";
+    if (!newAddress.district_id) errors.district_id = "Vui lòng chọn quận/huyện";
+    if (!newAddress.city_id) errors.city_id = "Vui lòng chọn tỉnh/thành phố";
+    if (!newAddress.full_address) errors.full_address = "Vui lòng nhập địa chỉ chi tiết";
+
+    setAddressErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async () => {
     try {
+      let addressId: number;
+
+      if (useNewAddress) {
+        if (!validateAddress()) {
+          return;
+        }
+
+        // Create new address
+        const addressResponse = await addressBookApi.create(newAddress);
+        addressId = addressResponse.data.id;
+      } else {
+        if (!selectedAddress) {
+          toast.error("Vui lòng chọn địa chỉ giao hàng");
+          return;
+        }
+        addressId = selectedAddress.id;
+      }
+
       // Create order request
       const orderRequest = {
         price: calculateSubTotal(),
         discount_amount: discount,
         total_price: calculateTotal(),
-        payment_method: paymentMethod === "cod" ? 1 : 2 // 1 for COD, 2 for online payment
+        payment_method: paymentMethod === "cod" ? 1 : 2, // 1 for COD, 2 for online payment
+        address_id: addressId
       };
 
       // Create order
@@ -118,15 +271,15 @@ const Checkout: React.FC = () => {
         navigate("/payment-success?cod=true");
       } else {
         // For online payment, redirect to payment URL
-        if (response.data) {
+        if (typeof response.data === 'string') {
           window.location.href = response.data;
         } else {
           toast.error("Không thể tạo link thanh toán!");
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating order:", error);
-      toast.error("Đã có lỗi xảy ra khi đặt hàng!");
+      toast.error(error.message || "Đã có lỗi xảy ra khi đặt hàng!");
     }
   };
 
@@ -232,49 +385,119 @@ const Checkout: React.FC = () => {
               <FormLabel component="legend">Chọn địa chỉ</FormLabel>
               <RadioGroup
                 row
-                value={useDefaultAddress ? "default" : "custom"}
-                onChange={(e) => setUseDefaultAddress(e.target.value === "default")}
+                value={useNewAddress ? "new" : "existing"}
+                onChange={(e) => setUseNewAddress(e.target.value === "new")}
               >
-                <FormControlLabel value="default" control={<Radio />} label="Dùng địa chỉ mặc định" />
-                <FormControlLabel value="custom" control={<Radio />} label="Nhập địa chỉ mới" />
+                <FormControlLabel value="existing" control={<Radio />} label="Chọn địa chỉ có sẵn" />
+                <FormControlLabel value="new" control={<Radio />} label="Thêm địa chỉ mới" />
               </RadioGroup>
             </FormControl>
 
-            {!useDefaultAddress && (
-              <>
+            {!useNewAddress ? (
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <Select
+                  value={selectedAddress?.id || ""}
+                  onChange={(e) => {
+                    const selected = addresses.find(addr => addr.id === e.target.value);
+                    setSelectedAddress(selected || null);
+                  }}
+                  displayEmpty
+                >
+                  <MenuItem value="">
+                    <em>Chọn địa chỉ giao hàng</em>
+                  </MenuItem>
+                  {addresses.map((address) => (
+                    <MenuItem key={address.id} value={address.id}>
+                      {address.full_name} - {address.full_address}
+                      {address.is_default === 1 && " (Mặc định)"}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            ) : (
+              <Box sx={{ mt: 2 }}>
                 <TextField
                   fullWidth
                   label="Họ và tên"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  margin="normal"
-                />
-                <TextField
-                  fullWidth
-                  label="Địa chỉ"
-                  name="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  name="full_name"
+                  value={newAddress.full_name}
+                  onChange={handleAddressChange}
+                  error={!!addressErrors.full_name}
+                  helperText={addressErrors.full_name}
                   margin="normal"
                 />
                 <TextField
                   fullWidth
                   label="Số điện thoại"
                   name="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={newAddress.phone}
+                  onChange={handleAddressChange}
+                  error={!!addressErrors.phone}
+                  helperText={addressErrors.phone}
                   margin="normal"
                 />
+                <FormControl fullWidth error={!!addressErrors.city_id} margin="normal">
+                  <InputLabel>Tỉnh/Thành phố</InputLabel>
+                  <Select
+                    name="city_id"
+                    value={newAddress.city_id}
+                    onChange={handleAddressChange}
+                    label="Tỉnh/Thành phố"
+                  >
+                    {cities.map((city) => (
+                      <MenuItem key={city.id} value={city.id}>
+                        {city.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>{addressErrors.city_id}</FormHelperText>
+                </FormControl>
+
+                <FormControl fullWidth error={!!addressErrors.district_id} margin="normal">
+                  <InputLabel>Quận/Huyện</InputLabel>
+                  <Select
+                    name="district_id"
+                    value={newAddress.district_id}
+                    onChange={handleAddressChange}
+                    label="Quận/Huyện"
+                  >
+                    {districts.map((district) => (
+                      <MenuItem key={district.id} value={district.id}>
+                        {district.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>{addressErrors.district_id}</FormHelperText>
+                </FormControl>
+
+                <FormControl fullWidth error={!!addressErrors.ward_id} margin="normal">
+                  <InputLabel>Phường/Xã</InputLabel>
+                  <Select
+                    name="ward_id"
+                    value={newAddress.ward_id}
+                    onChange={handleAddressChange}
+                    label="Phường/Xã"
+                  >
+                    {wards.map((ward) => (
+                      <MenuItem key={ward.id} value={ward.id}>
+                        {ward.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>{addressErrors.ward_id}</FormHelperText>
+                </FormControl>
+
                 <TextField
                   fullWidth
-                  label="Email"
-                  name="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  label="Địa chỉ chi tiết"
+                  name="full_address"
+                  value={newAddress.full_address}
+                  onChange={handleAddressChange}
+                  error={!!addressErrors.full_address}
+                  helperText={addressErrors.full_address}
                   margin="normal"
                 />
-              </>
+              </Box>
             )}
           </Paper>
         </Grid>
@@ -288,14 +511,19 @@ const Checkout: React.FC = () => {
         <FormControl component="fieldset">
           <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             <FormControlLabel value="cod" control={<Radio />} label="Thanh toán khi nhận hàng (COD)" />
-            <FormControlLabel value="online" control={<Radio />} label="Thanh toán online (VNPay, Momo, ZaloPay)" />
+            <FormControlLabel value="online" control={<Radio />} label="Thanh toán online (VNPay)" />
           </RadioGroup>
         </FormControl>
       </Paper>
 
       {/* Nút Xác nhận thanh toán */}
       <Box textAlign="center" mt={3}>
-        <Button variant="contained" color="primary" onClick={handleSubmit}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleSubmit}
+          disabled={!useNewAddress && !selectedAddress}
+        >
           Xác nhận thanh toán
         </Button>
       </Box>

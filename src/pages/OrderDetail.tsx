@@ -21,6 +21,8 @@ import {
   DialogActions,
   TextField,
   Rating,
+  DialogContentText,
+  Fade
 } from '@mui/material';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import orderApi, { Order } from '../services/API/OrderApi';
@@ -41,6 +43,7 @@ const OrderDetail: React.FC = () => {
   const [newRating, setNewRating] = useState<number | null>(5);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchOrderDetail();
@@ -98,6 +101,27 @@ const OrderDetail: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCancelClick = () => {
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!order) return;
+    
+    try {
+      await orderApi.cancelOrder(order.id);
+      toast.success('Hủy đơn hàng thành công');
+      setCancelDialogOpen(false);
+      navigate('/order-history');
+    } catch (error: any) {
+      toast.error(error.response?.data?.messageError || 'Không thể hủy đơn hàng');
+    }
+  };
+
+  const handleCancelClose = () => {
+    setCancelDialogOpen(false);
   };
 
   if (loading) {
@@ -167,6 +191,46 @@ const OrderDetail: React.FC = () => {
                     color={paymentStatusConfig[order.payment_status]?.color as any || 'default'}
                     size="small"
                   />
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+
+        {/* Thông tin địa chỉ giao hàng */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Địa chỉ giao hàng
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Người nhận
+                  </Typography>
+                  <Typography>{order.shipping_name}</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Số điện thoại
+                  </Typography>
+                  <Typography>{order.shipping_phone}</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Địa chỉ
+                  </Typography>
+                  <Typography>
+                    {order.shipping_address}
+                    {order.shipping_ward_name && `, ${order.shipping_ward_name}`}
+                    {order.shipping_district_name && `, ${order.shipping_district_name}`}
+                    {order.shipping_city_name && `, ${order.shipping_city_name}`}
+                  </Typography>
                 </Box>
               </Grid>
             </Grid>
@@ -309,7 +373,7 @@ const OrderDetail: React.FC = () => {
             </Box>
 
             {order.payment_status === 1 && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                 <Button
                   variant="contained"
                   color="primary"
@@ -325,6 +389,19 @@ const OrderDetail: React.FC = () => {
                   }}
                 >
                   Thanh toán
+                </Button>
+              </Box>
+            )}
+            {order.status !== StatusOrderEnum.DELIVERED && 
+             order.status !== StatusOrderEnum.CANCELLED && 
+             order.status !== StatusOrderEnum.SHIPPED && (
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={handleCancelClick}
+                >
+                  Hủy đơn hàng
                 </Button>
               </Box>
             )}
@@ -365,6 +442,33 @@ const OrderDetail: React.FC = () => {
             disabled={submitting || !newRating || !newComment.trim()}
           >
             {submitting ? "Đang gửi..." : "Gửi"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={handleCancelClose}
+        aria-labelledby="cancel-dialog-title"
+        aria-describedby="cancel-dialog-description"
+        TransitionComponent={Fade}
+        TransitionProps={{ timeout: 300 }}
+      >
+        <DialogTitle id="cancel-dialog-title">
+          Xác nhận hủy đơn hàng
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="cancel-dialog-description">
+            Bạn có chắc chắn muốn hủy đơn hàng #{order.id} không? Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelClose} color="primary">
+            Hủy
+          </Button>
+          <Button onClick={handleCancelConfirm} color="error" variant="contained" autoFocus>
+            Xác nhận hủy
           </Button>
         </DialogActions>
       </Dialog>

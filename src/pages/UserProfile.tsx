@@ -18,6 +18,7 @@ import { PhotoCamera, Visibility, VisibilityOff } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import userApiService from '../services/API/UserApiService';
 import { UserResponse } from '../services/API/UserApiService';
+import AddressManagement from '../components/AddressManagement';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -255,6 +256,7 @@ const UserProfile: React.FC = () => {
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="profile tabs">
             <Tab label="Thông Tin Cá Nhân" />
             <Tab label="Đổi Mật Khẩu" />
+            <Tab label="Địa Chỉ Giao Hàng" />
           </Tabs>
         </Box>
 
@@ -412,6 +414,10 @@ const UserProfile: React.FC = () => {
               {loading ? <CircularProgress size={24} /> : 'Đổi Mật Khẩu'}
             </Button>
           </form>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
+          {user && <AddressManagement userId={user.id} />}
         </TabPanel>
       </Paper>
     </Container>

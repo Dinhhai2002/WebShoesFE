@@ -21,5 +21,6 @@ export const paymentStatusConfig: Record<PaymentStatusEnum, StatusConfig> = {
   [PaymentStatusEnum.PENDING]: { color: 'warning', label: 'Chưa thanh toán' },
   [PaymentStatusEnum.PROCESSING]: { color: 'info', label: 'Đang xử lý' },
   [PaymentStatusEnum.PAID]: { color: 'success', label: 'Đã thanh toán' },
-  [PaymentStatusEnum.FAILED]: { color: 'error', label: 'Thanh toán thất bại' }
+  [PaymentStatusEnum.FAILED]: { color: 'error', label: 'Thanh toán thất bại' },
+  [PaymentStatusEnum.CANCELLED]: { color: 'error', label: 'Đã hủy' }
 }; 

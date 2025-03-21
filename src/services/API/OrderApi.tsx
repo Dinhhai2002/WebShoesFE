@@ -47,8 +47,11 @@ export interface Order {
     shipping_name: string;
     shipping_phone: string;
     shipping_ward_id: number;
+    shipping_ward_name: string;
     shipping_district_id: number;
+    shipping_district_name: string;
     shipping_city_id: number;
+    shipping_city_name: string;
     shipping_address: string;
 }
 
@@ -125,6 +128,16 @@ class OrderApi extends BaseApiService {
     async changeStatus(id: number, status: number): Promise<ApiResponse<Order>> {
         try {
             const response: AxiosResponse<ApiResponse<Order>> = await this.api.post(`/order/${id}/change-status`, { status });
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Cancel order with additional checks
+    async cancelOrder(id: number): Promise<ApiResponse<Order>> {
+        try {
+            const response: AxiosResponse<ApiResponse<Order>> = await this.api.post(`/order/${id}/cancel`);
             return response.data;
         } catch (error) {
             throw error;
