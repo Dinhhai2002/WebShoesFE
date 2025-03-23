@@ -109,7 +109,7 @@ const OrderDetail: React.FC = () => {
 
   const handleCancelConfirm = async () => {
     if (!order) return;
-    
+
     try {
       await orderApi.cancelOrder(order.id);
       toast.success('Hủy đơn hàng thành công');
@@ -154,7 +154,8 @@ const OrderDetail: React.FC = () => {
       </Box>
 
       <Grid container spacing={3}>
-        {/* Thông tin đơn hàng */}
+
+        {/* Thông tin địa chỉ giao hàng */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -164,9 +165,33 @@ const OrderDetail: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
+                    Mã đơn hàng
+                  </Typography>
+                  <Typography>{order.id}</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
                     Ngày đặt hàng
                   </Typography>
                   <Typography>{order.created_at}</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Phương thức thanh toán
+                  </Typography>
+                  <Typography>{order.payment_method === 1 ? 'COD' : order.payment_method === 2 ? 'VNPAY' : 'Tại quầy'}</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Tổng tiền
+                  </Typography>
+                  <Typography>{formatPrice(order.total_price)}</Typography>
                 </Box>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -197,46 +222,6 @@ const OrderDetail: React.FC = () => {
           </Paper>
         </Grid>
 
-        {/* Thông tin địa chỉ giao hàng */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Địa chỉ giao hàng
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Người nhận
-                  </Typography>
-                  <Typography>{order.shipping_name}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Số điện thoại
-                  </Typography>
-                  <Typography>{order.shipping_phone}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Địa chỉ
-                  </Typography>
-                  <Typography>
-                    {order.shipping_address}
-                    {order.shipping_ward_name && `, ${order.shipping_ward_name}`}
-                    {order.shipping_district_name && `, ${order.shipping_district_name}`}
-                    {order.shipping_city_name && `, ${order.shipping_city_name}`}
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-
         {/* Chi tiết sản phẩm */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
@@ -258,7 +243,7 @@ const OrderDetail: React.FC = () => {
                   {order.order_detail.map((detail) => (
                     <TableRow key={detail.id}>
                       <TableCell>
-                        <Link 
+                        <Link
                           to={`/product/${detail.product_detail.product_id}`}
                           state={{
                             colorId: detail.product_detail.color_id,
@@ -279,7 +264,7 @@ const OrderDetail: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Box display="flex" flexDirection="column" gap={1}>
-                          <Link 
+                          <Link
                             to={`/product/${detail.product_detail.product_id}`}
                             state={{
                               colorId: detail.product_detail.color_id,
@@ -289,7 +274,7 @@ const OrderDetail: React.FC = () => {
                             }}
                             style={{ textDecoration: 'none' }}
                           >
-                            <Typography 
+                            <Typography
                               variant="body2"
                               sx={{
                                 display: '-webkit-box',
@@ -392,19 +377,19 @@ const OrderDetail: React.FC = () => {
                 </Button>
               </Box>
             )}
-            {order.status !== StatusOrderEnum.DELIVERED && 
-             order.status !== StatusOrderEnum.CANCELLED && 
-             order.status !== StatusOrderEnum.SHIPPED && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={handleCancelClick}
-                >
-                  Hủy đơn hàng
-                </Button>
-              </Box>
-            )}
+            {order.status !== StatusOrderEnum.DELIVERED &&
+              order.status !== StatusOrderEnum.CANCELLED &&
+              order.status !== StatusOrderEnum.SHIPPED && (
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={handleCancelClick}
+                  >
+                    Hủy đơn hàng
+                  </Button>
+                </Box>
+              )}
           </Paper>
         </Grid>
       </Grid>
@@ -415,8 +400,8 @@ const OrderDetail: React.FC = () => {
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={2} mt={1}>
             <Typography component="legend">Đánh giá của bạn</Typography>
-            <Rating 
-              value={newRating} 
+            <Rating
+              value={newRating}
               onChange={(_, value) => setNewRating(value)}
               size="large"
             />
@@ -435,9 +420,9 @@ const OrderDetail: React.FC = () => {
           <Button onClick={handleReviewClose} color="secondary" disabled={submitting}>
             Hủy
           </Button>
-          <Button 
-            onClick={handleAddReview} 
-            variant="contained" 
+          <Button
+            onClick={handleAddReview}
+            variant="contained"
             color="primary"
             disabled={submitting || !newRating || !newComment.trim()}
           >

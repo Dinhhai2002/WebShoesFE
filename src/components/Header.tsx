@@ -158,9 +158,9 @@ const Header: React.FC = () => {
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
         {/* Logo */}
         <Box display="flex" alignItems="center" component={RouterLink} to={routes.Home} sx={{ textDecoration: 'none' }}>
-          <img src="/logo.png" alt="Logo" style={{ height: 40 }} />
+          <img src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/logo.jpg?alt=media" alt="Logo" style={{ height: 40,borderRadius: '50%' }} />
           <Typography variant="h6" fontWeight="bold" ml={1}>
-            MyStore
+            WebShoes
           </Typography>
         </Box>
 
