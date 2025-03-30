@@ -70,8 +70,16 @@ const ProductList = () => {
 
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category');
+    const brandFromUrl = searchParams.get('brand');
     const searchFromUrl = searchParams.get('search');
     
+    if (brandFromUrl) {
+      setFilters(prev => ({
+        ...prev,
+        brand_id: parseInt(brandFromUrl)
+      }));
+    }
+
     if (categoryFromUrl) {
       setFilters(prev => ({
         ...prev,
@@ -202,7 +210,6 @@ const ProductList = () => {
   const handleAddToCart = async (product: ProductDetail) => {
     try {
       await addToCart(product.id, 1);
-      toast.success("Đã thêm sản phẩm vào giỏ hàng");
     } catch (error) {
       toast.error("Không thể thêm vào giỏ hàng");
     }
@@ -556,7 +563,7 @@ const ProductList = () => {
                     >
                       Chi tiết
                     </Button>
-                    <IconButton
+                    {/* <IconButton
                       color="primary"
                       disabled={product.stock <= 0}
                       onClick={() => handleAddToCart(product)}
@@ -567,7 +574,7 @@ const ProductList = () => {
                       }}
                     >
                       <ShoppingCartIcon fontSize="small" />
-                    </IconButton>
+                    </IconButton> */}
                   </Stack>
                 </CardContent>
               </Card>

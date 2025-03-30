@@ -1,6 +1,3 @@
-import { Suspense } from "react";
-import Home from "../pages/Home";
-import Login from "../pages/Login/Login";
 
 export const routes = {
   Home: "/",
@@ -10,7 +7,9 @@ export const routes = {
   OTP: "/authentication/otp",
   ResetPassword: "/authentication/reset-password",
   Cart: "/cart",
-  OrderHistory: "/order-history"
+  OrderHistory: "/order-history",
+  Checkout: "/checkout",
+  ProductDetail: "/product-detail/:id",
 };
 
 // export const publicRoutes = [

@@ -15,7 +15,7 @@ import { Material } from "../services/API/MaterialApi";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import reviewApi, { Review } from "../services/API/ReviewApi";
+import { Review } from "../services/API/ReviewApi";
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -50,6 +50,7 @@ const ProductDetailPage: React.FC = () => {
                 // Fetch product
                 const productResponse = await authenticationApiService.getProductById(Number(id));
                 setProduct(productResponse.data);
+                setProductImages(productResponse.data.images);
 
                 // Fetch options
                 const [colorsResponse, sizesResponse, materialsResponse] = await Promise.all([
@@ -103,7 +104,7 @@ const ProductDetailPage: React.FC = () => {
 
             try {
                 setReviewLoading(true);
-                const response = await reviewApi.findAll({
+                const response = await authenticationApiService.getReviews({
                     product_id: product.id,
                     status: 1,
                     page: 1,
@@ -141,10 +142,10 @@ const ProductDetailPage: React.FC = () => {
                 if (response.data.list.length > 0) {
                     setProductDetail(response.data.list[0]);
                     // Update product images from the selected product detail
-                    setProductImages(response.data.list[0].image_url ? [response.data.list[0].image_url] : []);
+                    // setProductImages(response.data.list[0].image_url ? [response.data.list[0].image_url] : []);
                 } else {
                     setProductDetail(null);
-                    setProductImages([]);
+                    // setProductImages([]);
                 }
             } catch (err) {
                 console.error("Error fetching product detail:", err);
@@ -166,12 +167,12 @@ const ProductDetailPage: React.FC = () => {
                 });
 
                 // Collect all unique image URLs from product details
-                const allImages = response.data.list
-                    .map(detail => detail.image_url)
-                    .filter((url): url is string => !!url)
-                    .filter((url, index, self) => self.indexOf(url) === index);
+                // const allImages = response.data.list
+                //     .map(detail => detail.image_url)
+                //     .filter((url): url is string => !!url)
+                //     .filter((url, index, self) => self.indexOf(url) === index);
 
-                setProductImages(allImages);
+                // setProductImages(allImages);
             } catch (err) {
                 console.error("Error fetching all product details:", err);
             }

@@ -155,7 +155,7 @@ const OrderDetail: React.FC = () => {
 
       <Grid container spacing={3}>
 
-        {/* Thông tin địa chỉ giao hàng */}
+        {/* Thông tin đơn hàng */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -216,6 +216,43 @@ const OrderDetail: React.FC = () => {
                     color={paymentStatusConfig[order.payment_status]?.color as any || 'default'}
                     size="small"
                   />
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+
+        {/* Địa chỉ giao hàng */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Địa chỉ giao hàng
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Người nhận
+                  </Typography>
+                  <Typography>{order.shipping_name}</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Số điện thoại
+                  </Typography>
+                  <Typography>{order.shipping_phone}</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Địa chỉ
+                  </Typography>
+                  <Typography>
+                    {order.shipping_address}, {order.shipping_ward_name}, {order.shipping_district_name}, {order.shipping_city_name}
+                  </Typography>
                 </Box>
               </Grid>
             </Grid>
@@ -296,26 +333,6 @@ const OrderDetail: React.FC = () => {
                           <Typography variant="caption" color="text.secondary">
                             {detail.product_detail.color} - {detail.product_detail.size}
                           </Typography>
-                          {order.status === StatusOrderEnum.DELIVERED && (
-                            <Box display="flex" justifyContent="flex-start" mt={1}>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<Rating size="small" value={1} readOnly />}
-                                sx={{
-                                  borderRadius: 2,
-                                  textTransform: 'none',
-                                  '&:hover': {
-                                    backgroundColor: 'primary.light',
-                                    color: 'white',
-                                  }
-                                }}
-                                onClick={() => handleReviewOpen(detail.product_detail.product_id, detail.product_detail.name)}
-                              >
-                                Đánh giá sản phẩm
-                              </Button>
-                            </Box>
-                          )}
                         </Box>
                       </TableCell>
                       <TableCell align="right">{formatPrice(detail.price)}</TableCell>
@@ -326,70 +343,6 @@ const OrderDetail: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50' }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Box display="flex" justifyContent="space-between">
-                    <Typography>Tạm tính:</Typography>
-                    <Typography>{formatPrice(order.price)}</Typography>
-                  </Box>
-                </Grid>
-                {order.discount_amount > 0 && (
-                  <Grid item xs={12}>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography>Giảm giá:</Typography>
-                      <Typography color="error">
-                        -{formatPrice(order.discount_amount)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                )}
-                <Grid item xs={12}>
-                  <Divider />
-                  <Box display="flex" justifyContent="space-between" mt={2}>
-                    <Typography variant="h6">Tổng cộng:</Typography>
-                    <Typography variant="h6" color="primary">
-                      {formatPrice(order.total_price)}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
-
-            {order.payment_status === 1 && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={async () => {
-                    try {
-                      const response = await orderApi.getPaymentUrl(order.id);
-                      if (response.data) {
-                        window.location.href = response.data;
-                      }
-                    } catch (error) {
-                      toast.error('Không thể tạo link thanh toán');
-                    }
-                  }}
-                >
-                  Thanh toán
-                </Button>
-              </Box>
-            )}
-            {order.status !== StatusOrderEnum.DELIVERED &&
-              order.status !== StatusOrderEnum.CANCELLED &&
-              order.status !== StatusOrderEnum.SHIPPED && (
-                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={handleCancelClick}
-                  >
-                    Hủy đơn hàng
-                  </Button>
-                </Box>
-              )}
           </Paper>
         </Grid>
       </Grid>

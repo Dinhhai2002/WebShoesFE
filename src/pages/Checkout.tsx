@@ -154,12 +154,11 @@ const Checkout: React.FC = () => {
       const response = await voucherApi.apply(voucher.id, {
         total_amount: subtotal
       });
-      
+
       setDiscount(response.data.amount_voucher);
       toast.success("Áp dụng voucher thành công!");
-    } catch (error) {
-      console.error("Error applying voucher:", error);
-      toast.error("Không thể áp dụng voucher");
+    } catch (error: any) {
+      toast.error(error.message);
       setSelectedVoucher(null);
       setDiscount(0);
     }
@@ -167,12 +166,21 @@ const Checkout: React.FC = () => {
 
   const calculateTotal = () => {
     const subtotal = calculateSubTotal();
-    return subtotal - discount;
+    return subtotal - discount + calculateShipping(subtotal);
+  };
+
+  const calculateShipping = (subtotal: number) => {
+    // Calculate shipping cost based on the subtotal
+    if (subtotal >= 1000000) {
+      return 50000; // 50,000 VND for orders above 1 million
+    } else {
+      return 30000; // 30,000 VND for orders below 1 million
+    }
   };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const { name, value } = e.target;
-    
+
     if (name === 'city_id' && value) {
       const selectedCity = cities.find(city => city.id === value);
       setNewAddress(prev => ({
@@ -220,7 +228,7 @@ const Checkout: React.FC = () => {
 
   const validateAddress = () => {
     const errors: { [key: string]: string } = {};
-    
+
     if (!newAddress.full_name) errors.full_name = "Vui lòng nhập họ tên";
     if (!newAddress.phone) errors.phone = "Vui lòng nhập số điện thoại";
     if (!newAddress.ward_id) errors.ward_id = "Vui lòng chọn phường/xã";
@@ -310,14 +318,14 @@ const Checkout: React.FC = () => {
               {cart.map((item) => (
                 item && item.product_detail && (
                   <ListItem key={item.id}>
-                    <Avatar 
-                      src={item.product_detail.image_url} 
+                    <Avatar
+                      src={item.product_detail.image_url}
                       alt={item.product_detail.name}
-                      sx={{ width: 50, height: 50, mr: 2 }} 
+                      sx={{ width: 50, height: 50, mr: 2 }}
                     />
-                    <ListItemText 
+                    <ListItemText
                       primary={item.product_detail.name}
-                      secondary={`Số lượng: ${item.quantity}`} 
+                      secondary={`Số lượng: ${item.quantity}`}
                     />
                     <Typography>
                       {(item.product_detail.price * item.quantity).toLocaleString()} đ
@@ -327,7 +335,7 @@ const Checkout: React.FC = () => {
               ))}
             </List>
             <Divider sx={{ my: 2 }} />
-            
+
             {/* Voucher selection */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle1" gutterBottom>
@@ -347,8 +355,8 @@ const Checkout: React.FC = () => {
                   </MenuItem>
                   {vouchers.map((voucher) => (
                     <MenuItem key={voucher.id} value={voucher.id}>
-                      {voucher.code} - Giảm {voucher.discount_type === 1 ? 
-                        `${voucher.discount_value}%` : 
+                      {voucher.code} - Giảm {voucher.discount_type === 1 ?
+                        `${voucher.discount_value}%` :
                         `${voucher.discount_value.toLocaleString()}đ`
                       }
                     </MenuItem>
@@ -367,6 +375,9 @@ const Checkout: React.FC = () => {
                   Giảm giá: -{discount.toLocaleString()} đ
                 </Typography>
               )}
+              <Typography variant="subtitle1" align="right">
+                Phí ship: {calculateShipping(calculateSubTotal()).toLocaleString()} đ
+              </Typography>
               <Typography variant="h6" align="right">
                 Tổng tiền: {calculateTotal().toLocaleString()} đ
               </Typography>
@@ -518,9 +529,9 @@ const Checkout: React.FC = () => {
 
       {/* Nút Xác nhận thanh toán */}
       <Box textAlign="center" mt={3}>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <Button
+          variant="contained"
+          color="primary"
           onClick={handleSubmit}
           disabled={!useNewAddress && !selectedAddress}
         >

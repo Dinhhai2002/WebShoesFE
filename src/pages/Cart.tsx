@@ -27,6 +27,8 @@ import { CartDetail } from "../services/API/CartApi";
 import productDetailApi from "../services/API/ProductDetailApi";
 import { ProductDetail } from "../services/API/ProductDetailApi";
 import { toast } from 'react-toastify';
+import authenticationApiService from "../services/API/AuthenticationApiService";
+import { routes } from "../routes/routes";
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ const Cart: React.FC = () => {
       }
     } else {
       // Nếu chưa đăng nhập, lấy dữ liệu từ localStorage
-      const localCartItems = localStorage.getItem("cart_items");
+      const localCartItems = localStorage.getItem("localCart");
       if (localCartItems) {
         setCartItems(JSON.parse(localCartItems));
       } else {
@@ -62,7 +64,7 @@ const Cart: React.FC = () => {
         try {
           setLoadingRelated(true);
           const firstItem = cartItems[0];
-          const response = await productDetailApi.findAll({
+          const response = await authenticationApiService.getProductDetails({
             category_id: firstItem.product_detail.category_id,
             status: 1,
             limit: 4,
@@ -158,8 +160,17 @@ const Cart: React.FC = () => {
   };
 
   const totalPrice = cartItems.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
-  const shippingFee = totalPrice >= 300 ? 0 : 15;
+  const shippingFee = totalPrice >= 1000000 ? 50000 : 30000; // 50,000 for orders >= 1 million, 30,000 for others
   const finalTotal = totalPrice + shippingFee;
+
+  const handleCheckout = () => {
+    if(isAuthenticated) {
+      navigate(routes.Checkout);
+    } else {
+      toast.error("Vui lòng đăng nhập để thanh toán");
+      navigate(routes.Login);
+    }
+  }
 
   return (
     <Container sx={{ mt: 4, mb:4 }}>
@@ -220,7 +231,7 @@ const Cart: React.FC = () => {
                       <IconButton onClick={() => increaseQuantity(item.id)}>
                         <Add />
                       </IconButton>
-                      <IconButton onClick={() => removeItem(item.id)} color="error">
+                      <IconButton onClick={() => handleDialogOpen(item.id)} color="error">
                         <Delete />
                       </IconButton>
                     </CardActions>
@@ -247,7 +258,7 @@ const Cart: React.FC = () => {
                 color="primary"
                 fullWidth
                 sx={{ mt: 2 }}
-                onClick={() => navigate("/checkout")}
+                onClick={handleCheckout}
               >
                 Proceed to Checkout
               </Button>

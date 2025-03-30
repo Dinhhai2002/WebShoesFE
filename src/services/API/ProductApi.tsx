@@ -11,6 +11,7 @@ export interface Product {
     average_rating: number;
     image_url: string | null;
     status: number;
+    images: string[];
 }
 
 interface ProductQueryParams {

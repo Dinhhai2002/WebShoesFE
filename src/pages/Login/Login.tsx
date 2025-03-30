@@ -59,9 +59,9 @@ const Login = () => {
         login(dataLogin.data.token); 
 
         // Chuyển đổi giỏ hàng từ localStorage sang server
-        if (cartContext) {
-          await cartContext.migrateLocalCartToServer();
-        }
+        // if (cartContext) {
+        //   await cartContext.migrateLocalCartToServer();
+        // }
 
         setLoading(false);
         window.location.href = "/";

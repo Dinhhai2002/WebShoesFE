@@ -20,6 +20,7 @@
     "axios": "^1.8.1",
     "gapi-script": "^1.2.0",
     "lodash": "^4.17.21",
+    "pdfmake": "^0.2.18",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
