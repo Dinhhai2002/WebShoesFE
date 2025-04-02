@@ -1,4 +1,5 @@
-import React, { createContext, useState, ReactNode, useEffect } from 'react';
+import * as React from 'react'; // Fix TS error: allowSyntheticDefaultImports
+import { createContext, useState, ReactNode, useEffect } from 'react';
 import cartApi from '../services/API/CartApi';
 import { useAuth } from './AuthContext';
 import { CartDetail, CartDetailRequest } from '../services/API/CartApi';
@@ -21,8 +22,8 @@ interface ProductDetail {
   status: number;
 }
 
-// Định nghĩa giao diện cho sản phẩm trong giỏ hàng
-interface CartItem {
+// Định nghĩa giao diện cho sản phẩm trong giỏ hàng và export nó
+export interface CartItem { // Added export keyword
   id: number;
   cart_id: number;
   product_detail_id: number;
@@ -31,7 +32,7 @@ interface CartItem {
 }
 
 // Định nghĩa giao diện cho context
-interface CartContextType {
+export interface CartContextType {
   cart: CartDetail[];
   setCart: (cart: CartDetail[]) => void;
   addToCart: (productDetailId: number, quantity: number, cartItem?: CartItem) => Promise<void>;
@@ -47,7 +48,7 @@ interface CartContextType {
 export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Tạo provider để bao bọc các thành phần cần truy cập giỏ hàng
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }: { children: ReactNode }) => { // Add type for children prop
   const { isAuthenticated, cartItems, setCartItems } = useAuth();
   const [cart, setCart] = useState<CartDetail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,12 +119,17 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       // Sau khi đã chuyển đổi thành công, cập nhật lại giỏ hàng từ server
-      const updatedCartResponse = await cartApi.getCartDetails(parseInt(cartId));
-      const updatedCart = updatedCartResponse.data.list;
+      const updatedCartResponse = await cartApi.findOne(parseInt(cartId));
+      // Assuming findOne returns the CartDetail object directly in response.data
+      const updatedCart = updatedCartResponse.data; 
 
       // Cập nhật state với dữ liệu mới từ server
-      setCart(updatedCart);
-      setCartItems(updatedCart);
+      // Ensure updatedCart is an array if setCart expects an array
+      // If findOne returns a single CartDetail, and you need the list, you might need to adjust logic or API response
+      // Assuming updatedCartResponse.data IS the list of CartDetail items
+      const updatedList = Array.isArray(updatedCartResponse.data) ? updatedCartResponse.data : [];
+      setCart(updatedList); 
+      setCartItems(updatedList); // Pass the array directly
 
       // Xóa giỏ hàng local sau khi đã chuyển đổi thành công
       localStorage.removeItem('localCart');
@@ -156,8 +162,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const response = await cartApi.create(request);
         
         // Cập nhật state với dữ liệu mới từ API
-        setCart(prevCart => [...prevCart, response.data]);
-        setCartItems(prevItems => [...prevItems, response.data]);
+        const newItem = response.data; // Assuming response.data is the new CartDetail item
+        setCart(prevCart => [...prevCart, newItem]);
+        // Update cartItems by passing the new array directly
+        setCartItems([...cartItems, newItem]); 
       } else {
         // Nếu chưa đăng nhập, thêm vào localStorage với thông tin đầy đủ
         if (!cartItem) {
@@ -181,8 +189,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await cartApi.update(id, { product_detail_id: id, quantity: 0 });
         
         // Cập nhật state
-        setCart(prevCart => prevCart.filter(item => item.id !== id));
-        setCartItems(prevItems => prevItems.filter(item => item.id !== id));
+        const updatedLocalCart = cart.filter(item => item.id !== id);
+        setCart(updatedLocalCart);
+        // Update cartItems by passing the new array directly
+        setCartItems(cartItems.filter((item: CartDetail) => item.id !== id)); 
       } else {
         // Nếu chưa đăng nhập, xóa khỏi localStorage
         setCart(prevCart => prevCart.filter(item => item.id !== id));
@@ -208,16 +218,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await cartApi.update(id, request);
         
         // Cập nhật state
-        setCart(prevCart =>
-          prevCart.map(item =>
+        const updatedLocalCartOnUpdate = cart.map(item =>
             item.id === id ? { ...item, quantity } : item
-          )
-        );
-        setCartItems(prevItems =>
-          prevItems.map(item =>
+          );
+        setCart(updatedLocalCartOnUpdate);
+        // Update cartItems by passing the new array directly
+        setCartItems(cartItems.map((item: CartDetail) => 
             item.id === id ? { ...item, quantity } : item
-          )
-        );
+          ));
       } else {
         // Nếu chưa đăng nhập, cập nhật trong localStorage
         setCart(prevCart =>

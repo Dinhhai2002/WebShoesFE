@@ -37,6 +37,7 @@ export interface Order {
     voucher_id: number | null;
     price: number;
     discount_amount: number;
+    amount_shipping: number;
     total_price: number;
     payment_method: number;
     payment_status: PaymentStatusEnum;
@@ -72,9 +73,11 @@ interface OrderListResponse {
 interface CreateOrderRequest {
     price: number;
     discount_amount: number;
+    amount_shipping: number;
     total_price: number;
     payment_method: number;
     address_id: number;
+    voucher_id: number;
 }
 
 interface ChangeStatusRequest {

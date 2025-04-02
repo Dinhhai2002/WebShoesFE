@@ -34,9 +34,10 @@ interface ApplyVoucherRequest {
   total_amount: number;
 }
 
-interface ApplyVoucherResponse {
+export interface ApplyVoucherResponse {
   total_amount: number;
   amount_voucher: number;
+  voucher : Voucher;
 }
 
 interface ApiResponse<T> {
@@ -62,8 +63,8 @@ class VoucherApi extends BaseApiService {
         }
       });
       return response.data;
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   }
 
@@ -72,8 +73,8 @@ class VoucherApi extends BaseApiService {
     try {
       const response: AxiosResponse<ApiResponse<Voucher>> = await this.api.get(`/voucher/${id}`);
       return response.data;
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   }
 
@@ -82,8 +83,8 @@ class VoucherApi extends BaseApiService {
     try {
       const response: AxiosResponse<ApiResponse<Voucher>> = await this.api.post(`/voucher/${id}/change-status`);
       return response.data;
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   }
 
@@ -92,8 +93,8 @@ class VoucherApi extends BaseApiService {
     try {
       const response: AxiosResponse<ApiResponse<Voucher>> = await this.api.post("/voucher/create", voucher);
       return response.data;
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   }
 
@@ -102,8 +103,8 @@ class VoucherApi extends BaseApiService {
     try {
       const response: AxiosResponse<ApiResponse<Voucher>> = await this.api.post(`/voucher/${id}/update`, voucher);
       return response.data;
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw new Error(error.message);
     }
   }
 
@@ -113,7 +114,18 @@ class VoucherApi extends BaseApiService {
       const response: AxiosResponse<ApiResponse<ApplyVoucherResponse>> = await this.api.post(`/voucher/${id}/apply`, data);
       handleResponseApi.handleResponse(response);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get best voucher
+  async getBestVoucher(): Promise<ApiResponse<ApplyVoucherResponse>> {
+    try {
+      const response: AxiosResponse<ApiResponse<ApplyVoucherResponse>> = await this.api.get("/voucher/best-voucher");
+      handleResponseApi.handleResponse(response);
+      return response.data;
+    } catch (error: any) {
       throw new Error(error.message);
     }
   }
@@ -121,4 +133,4 @@ class VoucherApi extends BaseApiService {
 
 const token = localStorage.getItem("token") || undefined;
 const voucherApi = new VoucherApi(token);
-export default voucherApi; 
+export default voucherApi;

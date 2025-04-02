@@ -1,4 +1,5 @@
-import React, { useState, useContext, useEffect } from "react";
+import * as React from "react"; // Fix TS error: allowSyntheticDefaultImports
+import { useState, useContext, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -21,19 +22,29 @@ import {
   Select,
   FormHelperText,
   InputLabel,
+  SelectChangeEvent, // Import SelectChangeEvent
 } from "@mui/material";
-import { CartContext } from "../context/CartContext";
+// Import Voucher and ApplyVoucherResponse, assume CartItem is exported from CartContext
+import { CartContext, CartItem } from "../context/CartContext";
 import VoucherBlock from "../components/VoucherBlock";
-import voucherApi, { VoucherResponse } from "../services/API/VoucherApi";
+import voucherApi, {
+  Voucher,
+  ApplyVoucherResponse,
+} from "../services/API/VoucherApi"; // Use Voucher type
 import { toast } from "react-toastify";
 import orderApi from "../services/API/OrderApi";
-import addressBookApi, { AddressBook, AddressBookRequest } from "../services/API/AddressBookApi";
+import addressBookApi, {
+  AddressBook,
+  AddressBookRequest,
+} from "../services/API/AddressBookApi";
 import authenticationApiService from "../services/API/AuthenticationApiService";
 import { useNavigate } from "react-router-dom";
 
 const Checkout: React.FC = () => {
   const [addresses, setAddresses] = useState<AddressBook[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<AddressBook | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<AddressBook | null>(
+    null
+  );
   const [newAddress, setNewAddress] = useState<AddressBookRequest>({
     full_name: "",
     phone: "",
@@ -44,21 +55,42 @@ const Checkout: React.FC = () => {
     city_id: 0,
     city_name: "",
     full_address: "",
-    is_default: 0
+    is_default: 0,
   });
   const [useNewAddress, setUseNewAddress] = useState(false);
-  const [addressErrors, setAddressErrors] = useState<{ [key: string]: string }>({});
+  const [addressErrors, setAddressErrors] = useState<{ [key: string]: string }>(
+    {}
+  );
   const [paymentMethod, setPaymentMethod] = useState("cod");
-  const [vouchers, setVouchers] = useState<VoucherResponse[]>([]);
-  const [selectedVoucher, setSelectedVoucher] = useState<VoucherResponse | null>(null);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]); // Use Voucher type
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null); // Use Voucher type
+  const [bestVoucher, setBestVoucher] = useState<ApplyVoucherResponse | null>(
+    null
+  ); // State for best voucher info
   const [discount, setDiscount] = useState(0);
-  const { cart, resetCart } = useContext(CartContext);
+  const cartContext = useContext(CartContext); // Get the context object
   const navigate = useNavigate();
+
+  // Destructure after checking context exists to satisfy TypeScript
+  const cart = cartContext?.cart || [];
+  const resetCart =
+    cartContext?.resetCart ||
+    (() => {
+      console.error("resetCart function not available in CartContext");
+    });
 
   // States for location selection
   const [cities, setCities] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [wards, setWards] = useState<any[]>([]);
+
+  // Define calculateSubTotal function correctly here
+  const calculateSubTotal = (): number => {
+    return cart.reduce((sum: number, item: CartItem) => {
+      if (!item || !item.product_detail) return sum;
+      return sum + item.product_detail.price * item.quantity;
+    }, 0);
+  };
 
   // Fetch cities on component mount
   useEffect(() => {
@@ -70,26 +102,30 @@ const Checkout: React.FC = () => {
       const response = await authenticationApiService.getAllCity();
       setCities(response.data);
     } catch (error: any) {
-      toast.error('Không thể tải danh sách tỉnh/thành phố');
+      toast.error("Không thể tải danh sách tỉnh/thành phố");
     }
   };
 
   const fetchDistricts = async (cityId: number) => {
     try {
-      const response = await authenticationApiService.findDistrictByCityId(cityId);
+      const response = await authenticationApiService.findDistrictByCityId(
+        cityId
+      );
       setDistricts(response.data);
       setWards([]); // Reset wards when city changes
     } catch (error: any) {
-      toast.error('Không thể tải danh sách quận/huyện');
+      toast.error("Không thể tải danh sách quận/huyện");
     }
   };
 
   const fetchWards = async (districtId: number) => {
     try {
-      const response = await authenticationApiService.findWardByDistrictId(districtId);
+      const response = await authenticationApiService.findWardByDistrictId(
+        districtId
+      );
       setWards(response.data);
     } catch (error: any) {
-      toast.error('Không thể tải danh sách phường/xã');
+      toast.error("Không thể tải danh sách phường/xã");
     }
   };
 
@@ -101,11 +137,13 @@ const Checkout: React.FC = () => {
           keySearch: "",
           status: 1,
           page: 1,
-          limit: 10
+          limit: 10,
         });
         setAddresses(response.data.list);
         // Set default address if exists
-        const defaultAddress = response.data.list.find(addr => addr.is_default === 1);
+        const defaultAddress = response.data.list.find(
+          (addr) => addr.is_default === 1
+        );
         if (defaultAddress) {
           setSelectedAddress(defaultAddress);
         }
@@ -117,14 +155,14 @@ const Checkout: React.FC = () => {
     fetchAddresses();
   }, []);
 
-  // Fetch vouchers
+  // Fetch vouchers list for dropdown
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
         const response = await voucherApi.findAll({
           status: 1,
           page: 1,
-          limit: 10
+          limit: 10, // Fetch more if needed, or implement pagination/search
         });
         setVouchers(response.data.list);
       } catch (error) {
@@ -135,42 +173,122 @@ const Checkout: React.FC = () => {
     fetchVouchers();
   }, []);
 
-  const calculateSubTotal = () => {
-    return cart.reduce((sum, item) => {
-      if (!item || !item.product_detail) return sum;
-      return sum + (item.product_detail.price * item.quantity);
-    }, 0);
-  };
+  // Fetch and apply best voucher when cart total and voucher list are ready
+  useEffect(() => {
+    const fetchBestVoucher = async () => {
+      // Only run if we have vouchers loaded and the cart has items
+      if (vouchers.length > 0 && cart.length > 0) {
+        const subtotal = calculateSubTotal(); // Use the correctly defined function
+        if (subtotal > 0) {
+          try {
+            // Call the API to get the best voucher suggestion
+            const response = await voucherApi.getBestVoucher();
+            if (response.data && response.data.voucher) {
+              // Check if the suggested best voucher exists in our fetched list (optional check)
+              const bestVoucherExists = vouchers.some(
+                (v) => v.id === response.data.voucher.id
+              );
+              if (!bestVoucherExists) {
+                console.warn(
+                  "Best voucher suggested by API not found in the fetched list."
+                );
+              }
 
-  const handleVoucherSelect = async (voucher: VoucherResponse | null) => {
-    setSelectedVoucher(voucher);
+              // Check applicability via apply API
+              const applyCheckResponse = await voucherApi.apply(
+                response.data.voucher.id,
+                {
+                  total_amount: subtotal,
+                }
+              );
+
+              // If applicable, store the details and auto-apply state
+              setBestVoucher(applyCheckResponse.data);
+              setSelectedVoucher(applyCheckResponse.data.voucher); // This should update the Select value
+              setDiscount(applyCheckResponse.data.amount_voucher);
+              // Removed automatic toast for applying best voucher
+            } else {
+              // No best voucher suggested by the API
+              setBestVoucher(null);
+              setSelectedVoucher(null); // Ensure nothing is selected initially
+              setDiscount(0);
+            }
+          } catch (error: any) {
+            // Handle errors from getBestVoucher or the subsequent apply check
+            console.error("Error fetching or applying best voucher:", error);
+            // Don't show error toast for best voucher failure, it's optional/automatic
+            setBestVoucher(null);
+            // Reset selection on fetch/apply error
+            setSelectedVoucher(null);
+            setDiscount(0);
+          }
+        } else {
+          // Cart is empty or subtotal is zero, reset voucher state
+          setBestVoucher(null);
+          setSelectedVoucher(null);
+          setDiscount(0);
+        }
+      } else {
+        // Vouchers not loaded or cart empty, reset voucher state
+        setBestVoucher(null);
+        setSelectedVoucher(null);
+        setDiscount(0);
+      }
+    };
+
+    fetchBestVoucher();
+    // Add vouchers to dependency array
+  }, [cart, vouchers]); // Re-run when cart or voucher list changes
+
+  const handleVoucherSelect = async (voucher: Voucher | null) => {
+    // If user selects "Không sử dụng voucher" (null)
     if (!voucher) {
+      setSelectedVoucher(null);
       setDiscount(0);
+      toast.info("Đã bỏ chọn voucher.");
       return;
     }
 
+    // If user selects a specific voucher from the dropdown
     try {
       const subtotal = calculateSubTotal();
       const response = await voucherApi.apply(voucher.id, {
-        total_amount: subtotal
+        total_amount: subtotal,
       });
 
+      // Update state with the manually selected voucher and its discount
+      setSelectedVoucher(voucher);
       setDiscount(response.data.amount_voucher);
-      toast.success("Áp dụng voucher thành công!");
+      toast.success(`Áp dụng voucher ${voucher.code} thành công!`);
     } catch (error: any) {
-      toast.error(error.message);
-      setSelectedVoucher(null);
-      setDiscount(0);
+      toast.error(
+        `Không thể áp dụng voucher ${voucher.code}: ${error.message}`
+      );
+      // If applying the manually selected voucher fails, revert to the best voucher if one was found and applied previously
+      if (bestVoucher && bestVoucher.voucher) {
+        setSelectedVoucher(bestVoucher.voucher);
+        setDiscount(bestVoucher.amount_voucher);
+        toast.info(`Đã quay lại voucher tốt nhất: ${bestVoucher.voucher.code}`);
+      } else {
+        // If no best voucher was applicable either, reset selection
+        setSelectedVoucher(null);
+        setDiscount(0);
+      }
     }
   };
 
   const calculateTotal = () => {
     const subtotal = calculateSubTotal();
-    return subtotal - discount + calculateShipping(subtotal);
+    // Ensure shipping is calculated based on subtotal *before* discount
+    const shippingCost = calculateShipping(subtotal);
+    return subtotal - discount + shippingCost;
   };
 
   const calculateShipping = (subtotal: number) => {
     // Calculate shipping cost based on the subtotal
+    // Example logic: Free ship over 1,000,000, else 30,000
+    // return subtotal >= 1000000 ? 0 : 30000;
+    // Current logic from original code:
     if (subtotal >= 1000000) {
       return 50000; // 50,000 VND for orders above 1 million
     } else {
@@ -178,50 +296,68 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
-    const { name, value } = e.target;
+  // Combined handler for both TextField and Select changes
+  const handleAddressChange = (
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      | SelectChangeEvent<string | number>
+  ) => {
+    const target = e.target as
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | { name: string; value: unknown }; // Type assertion
+    const name = target.name as keyof AddressBookRequest;
+    // Ensure value is treated correctly, especially for Select which might pass numbers
+    const value =
+      typeof target.value === "number" ? target.value : String(target.value);
 
-    if (name === 'city_id' && value) {
-      const selectedCity = cities.find(city => city.id === value);
-      setNewAddress(prev => ({
+    if (name === "city_id" && value) {
+      const cityId = Number(value);
+      const selectedCity = cities.find((city) => city.id === cityId);
+      setNewAddress((prev) => ({
         ...prev,
-        city_id: Number(value),
+        city_id: cityId,
         city_name: selectedCity?.name || "",
-        district_id: 0,
+        district_id: 0, // Reset district and ward
         district_name: "",
         ward_id: 0,
-        ward_name: ""
+        ward_name: "",
       }));
-      fetchDistricts(Number(value));
-    } else if (name === 'district_id' && value) {
-      const selectedDistrict = districts.find(district => district.id === value);
-      setNewAddress(prev => ({
+      fetchDistricts(cityId);
+    } else if (name === "district_id" && value) {
+      const districtId = Number(value);
+      const selectedDistrict = districts.find(
+        (district) => district.id === districtId
+      );
+      setNewAddress((prev) => ({
         ...prev,
-        district_id: Number(value),
+        district_id: districtId,
         district_name: selectedDistrict?.name || "",
-        ward_id: 0,
-        ward_name: ""
+        ward_id: 0, // Reset ward
+        ward_name: "",
       }));
-      fetchWards(Number(value));
-    } else if (name === 'ward_id' && value) {
-      const selectedWard = wards.find(ward => ward.id === value);
-      setNewAddress(prev => ({
+      fetchWards(districtId);
+    } else if (name === "ward_id" && value) {
+      const wardId = Number(value);
+      const selectedWard = wards.find((ward) => ward.id === wardId);
+      setNewAddress((prev) => ({
         ...prev,
-        ward_id: Number(value),
-        ward_name: selectedWard?.name || ""
+        ward_id: wardId,
+        ward_name: selectedWard?.name || "",
       }));
     } else {
-      setNewAddress(prev => ({
+      // Handle other fields like full_name, phone, full_address
+      setNewAddress((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
 
     // Clear error when user starts typing
-    if (addressErrors[name as string]) {
-      setAddressErrors(prev => ({
+    if (addressErrors[name]) {
+      setAddressErrors((prev) => ({
         ...prev,
-        [name as string]: ""
+        [name]: "",
       }));
     }
   };
@@ -229,12 +365,17 @@ const Checkout: React.FC = () => {
   const validateAddress = () => {
     const errors: { [key: string]: string } = {};
 
-    if (!newAddress.full_name) errors.full_name = "Vui lòng nhập họ tên";
-    if (!newAddress.phone) errors.phone = "Vui lòng nhập số điện thoại";
-    if (!newAddress.ward_id) errors.ward_id = "Vui lòng chọn phường/xã";
-    if (!newAddress.district_id) errors.district_id = "Vui lòng chọn quận/huyện";
+    if (!newAddress.full_name.trim()) errors.full_name = "Vui lòng nhập họ tên";
+    if (!newAddress.phone.trim()) errors.phone = "Vui lòng nhập số điện thoại";
+    // Basic phone validation (example: 10 digits) - adjust regex as needed
+    else if (!/^\d{10}$/.test(newAddress.phone))
+      errors.phone = "Số điện thoại không hợp lệ";
     if (!newAddress.city_id) errors.city_id = "Vui lòng chọn tỉnh/thành phố";
-    if (!newAddress.full_address) errors.full_address = "Vui lòng nhập địa chỉ chi tiết";
+    if (!newAddress.district_id)
+      errors.district_id = "Vui lòng chọn quận/huyện";
+    if (!newAddress.ward_id) errors.ward_id = "Vui lòng chọn phường/xã";
+    if (!newAddress.full_address.trim())
+      errors.full_address = "Vui lòng nhập địa chỉ chi tiết";
 
     setAddressErrors(errors);
     return Object.keys(errors).length === 0;
@@ -242,16 +383,23 @@ const Checkout: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      let addressId: number;
+      let addressId: number | null = null; // Initialize as null
 
       if (useNewAddress) {
         if (!validateAddress()) {
+          toast.warn("Vui lòng kiểm tra lại thông tin địa chỉ mới.");
           return;
         }
-
         // Create new address
         const addressResponse = await addressBookApi.create(newAddress);
-        addressId = addressResponse.data.id;
+        const createdAddress = addressResponse.data; // This should be the full AddressBook object
+        addressId = createdAddress.id;
+        // Add the full address object returned by the API to the list
+        setAddresses((prev) => [...prev, createdAddress]);
+        // Select the newly created address (full object)
+        setSelectedAddress(createdAddress);
+        setUseNewAddress(false); // Switch back to existing address view
+        toast.success("Đã thêm địa chỉ mới thành công.");
       } else {
         if (!selectedAddress) {
           toast.error("Vui lòng chọn địa chỉ giao hàng");
@@ -260,13 +408,21 @@ const Checkout: React.FC = () => {
         addressId = selectedAddress.id;
       }
 
+      // Ensure addressId is set before proceeding
+      if (addressId === null) {
+        toast.error("Đã có lỗi xảy ra với địa chỉ giao hàng.");
+        return;
+      }
+
       // Create order request
       const orderRequest = {
         price: calculateSubTotal(),
         discount_amount: discount,
+        amount_shipping: calculateShipping(calculateSubTotal()),
         total_price: calculateTotal(),
         payment_method: paymentMethod === "cod" ? 1 : 2, // 1 for COD, 2 for online payment
-        address_id: addressId
+        address_id: addressId, // Use the determined addressId
+        voucher_id: selectedVoucher ? selectedVoucher.id : 0, // Include voucher ID if one is selected
       };
 
       // Create order
@@ -277,25 +433,40 @@ const Checkout: React.FC = () => {
         resetCart();
         // For COD, redirect to success page with cod=true parameter
         navigate("/payment-success?cod=true");
+        toast.success("Đặt hàng thành công! Vui lòng chờ xác nhận.");
       } else {
         // For online payment, redirect to payment URL
-        if (typeof response.data === 'string') {
+        if (
+          typeof response.data === "string" &&
+          response.data.startsWith("http")
+        ) {
+          // Reset cart before redirecting
+          resetCart();
           window.location.href = response.data;
         } else {
-          toast.error("Không thể tạo link thanh toán!");
+          console.error("Invalid payment URL received:", response.data);
+          toast.error(
+            "Không thể tạo link thanh toán! Vui lòng thử lại hoặc chọn COD."
+          );
         }
       }
     } catch (error: any) {
       console.error("Error creating order:", error);
-      toast.error(error.message || "Đã có lỗi xảy ra khi đặt hàng!");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Đã có lỗi xảy ra khi đặt hàng!"
+      );
     }
   };
 
-  if (!cart || cart.length === 0) {
+  // Check if cart is empty after context is potentially updated
+  if (cart.length === 0) {
     return (
       <Container sx={{ mb: 4, mt: 4 }}>
         <Typography variant="h5" align="center">
-          Giỏ hàng trống. Vui lòng thêm sản phẩm vào giỏ hàng trước khi thanh toán.
+          Giỏ hàng trống. Vui lòng thêm sản phẩm vào giỏ hàng trước khi thanh
+          toán.
         </Typography>
       </Container>
     );
@@ -315,50 +486,84 @@ const Checkout: React.FC = () => {
               Sản phẩm trong đơn hàng
             </Typography>
             <List>
-              {cart.map((item) => (
-                item && item.product_detail && (
-                  <ListItem key={item.id}>
-                    <Avatar
-                      src={item.product_detail.image_url}
-                      alt={item.product_detail.name}
-                      sx={{ width: 50, height: 50, mr: 2 }}
-                    />
-                    <ListItemText
-                      primary={item.product_detail.name}
-                      secondary={`Số lượng: ${item.quantity}`}
-                    />
-                    <Typography>
-                      {(item.product_detail.price * item.quantity).toLocaleString()} đ
-                    </Typography>
-                  </ListItem>
-                )
-              ))}
+              {cart.map(
+                (
+                  item: CartItem // Add CartItem type
+                ) =>
+                  item &&
+                  item.product_detail && (
+                    <ListItem key={item.id} sx={{ alignItems: "flex-start" }}>
+                      <Avatar
+                        src={item.product_detail.image_url}
+                        alt={item.product_detail.name}
+                        variant="square"
+                        sx={{ width: 60, height: 60, mr: 2 }}
+                      />
+                      <ListItemText
+                        primary={item.product_detail.name}
+                        secondary={`Số lượng: ${item.quantity}`}
+                        primaryTypographyProps={{
+                          fontWeight: "medium",
+                          mb: 0.5,
+                        }}
+                      />
+                      <Typography sx={{ fontWeight: "medium" }}>
+                        {(
+                          item.product_detail.price * item.quantity
+                        ).toLocaleString()}{" "}
+                        đ
+                      </Typography>
+                    </ListItem>
+                  )
+              )}
             </List>
             <Divider sx={{ my: 2 }} />
 
             {/* Voucher selection */}
             <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Chọn Voucher
-              </Typography>
-              <FormControl fullWidth>
+              {/* Voucher selection - Added InputLabel */}
+              <FormControl fullWidth variant="outlined">
+                <InputLabel id="voucher-select-label">Chọn Voucher</InputLabel>
                 <Select
-                  value={selectedVoucher?.id || ""}
-                  onChange={(e) => {
-                    const selected = vouchers.find(v => v.id === e.target.value);
-                    handleVoucherSelect(selected || null);
+                  labelId="voucher-select-label"
+                  label="Chọn Voucher" // Add label prop to associate with InputLabel
+                  // Ensure value is number or empty string, matching MenuItem values
+                  value={selectedVoucher ? selectedVoucher.id : ""}
+                  onChange={(e: SelectChangeEvent<number | string>) => {
+                    // Explicitly type the event
+                    const selectedId = e.target.value;
+                    // Handle empty string case for "Không sử dụng"
+                    if (selectedId === "") {
+                      handleVoucherSelect(null);
+                      return;
+                    }
+                    const selected =
+                      vouchers.find((v) => v.id === Number(selectedId)) || null; // Find voucher or set null
+                    handleVoucherSelect(selected);
                   }}
                   displayEmpty
+                  // Removed renderValue prop to rely on default MenuItem display
                 >
+                  {selectedVoucher ? (
+                    <MenuItem value="">
+                      <em>sử dụng voucher</em>
+                    </MenuItem>
+                  ) : (
+                    <MenuItem value="">
+                      <em>Không sử dụng voucher</em>
+                    </MenuItem>
+                  )}
                   <MenuItem value="">
-                    <em>Không sử dụng voucher</em>
+                    <em></em>
                   </MenuItem>
                   {vouchers.map((voucher) => (
                     <MenuItem key={voucher.id} value={voucher.id}>
-                      {voucher.code} - Giảm {voucher.discount_type === 1 ?
-                        `${voucher.discount_value}%` :
-                        `${voucher.discount_value.toLocaleString()}đ`
-                      }
+                      {voucher.code} - Giảm{" "}
+                      {voucher.discount_type === 1
+                        ? `${voucher.discount_value}%`
+                        : `${voucher.discount_value.toLocaleString()}đ`}{" "}
+                      (Đơn tối thiểu: {voucher.min_order_value.toLocaleString()}
+                      đ)
                     </MenuItem>
                   ))}
                 </Select>
@@ -367,20 +572,55 @@ const Checkout: React.FC = () => {
 
             {/* Tổng tiền */}
             <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1" align="right">
-                Tạm tính: {calculateSubTotal().toLocaleString()} đ
-              </Typography>
-              {discount > 0 && (
-                <Typography color="error" variant="subtitle1" align="right">
-                  Giảm giá: -{discount.toLocaleString()} đ
-                </Typography>
-              )}
-              <Typography variant="subtitle1" align="right">
-                Phí ship: {calculateShipping(calculateSubTotal()).toLocaleString()} đ
-              </Typography>
-              <Typography variant="h6" align="right">
-                Tổng tiền: {calculateTotal().toLocaleString()} đ
-              </Typography>
+              <Grid container justifyContent="flex-end" spacing={1}>
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    Tạm tính:
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    {calculateSubTotal().toLocaleString()} đ
+                  </Typography>
+                </Grid>
+                {discount > 0 && (
+                  <>
+                    <Grid item xs={6}>
+                      <Typography color="error" variant="body1" align="right">
+                        Giảm giá:
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography color="error" variant="body1" align="right">
+                        -{discount.toLocaleString()} đ
+                      </Typography>
+                    </Grid>
+                  </>
+                )}
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    Phí ship:
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    {calculateShipping(calculateSubTotal()).toLocaleString()} đ
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="h6" align="right">
+                    Tổng tiền:
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="h6" align="right">
+                    {calculateTotal().toLocaleString()} đ
+                  </Typography>
+                </Grid>
+              </Grid>
             </Box>
           </Paper>
         </Grid>
@@ -392,69 +632,116 @@ const Checkout: React.FC = () => {
               Thông tin giao hàng
             </Typography>
 
-            <FormControl component="fieldset">
+            <FormControl component="fieldset" sx={{ mb: 2 }}>
               <FormLabel component="legend">Chọn địa chỉ</FormLabel>
               <RadioGroup
                 row
                 value={useNewAddress ? "new" : "existing"}
                 onChange={(e) => setUseNewAddress(e.target.value === "new")}
               >
-                <FormControlLabel value="existing" control={<Radio />} label="Chọn địa chỉ có sẵn" />
-                <FormControlLabel value="new" control={<Radio />} label="Thêm địa chỉ mới" />
+                <FormControlLabel
+                  value="existing"
+                  control={<Radio />}
+                  label="Chọn địa chỉ có sẵn"
+                  disabled={addresses.length === 0}
+                />
+                <FormControlLabel
+                  value="new"
+                  control={<Radio />}
+                  label="Thêm địa chỉ mới"
+                />
               </RadioGroup>
             </FormControl>
 
             {!useNewAddress ? (
-              <FormControl fullWidth sx={{ mt: 2 }}>
+              <FormControl
+                fullWidth
+                variant="outlined"
+                error={!selectedAddress && addresses.length > 0}
+              >
+                <InputLabel id="select-address-label">
+                  Địa chỉ đã lưu
+                </InputLabel>
                 <Select
+                  labelId="select-address-label"
+                  label="Địa chỉ đã lưu"
                   value={selectedAddress?.id || ""}
                   onChange={(e) => {
-                    const selected = addresses.find(addr => addr.id === e.target.value);
-                    setSelectedAddress(selected || null);
+                    const selectedId = e.target.value;
+                    const selected =
+                      addresses.find(
+                        (addr) => addr.id === Number(selectedId)
+                      ) || null;
+                    setSelectedAddress(selected);
                   }}
-                  displayEmpty
+                  displayEmpty={addresses.length === 0}
+                  disabled={addresses.length === 0}
                 >
-                  <MenuItem value="">
-                    <em>Chọn địa chỉ giao hàng</em>
-                  </MenuItem>
+                  {addresses.length === 0 ? (
+                    <MenuItem value="" disabled>
+                      <em>Chưa có địa chỉ nào</em>
+                    </MenuItem>
+                  ) : (
+                    <MenuItem value="">
+                      <em>Chọn địa chỉ giao hàng</em>
+                    </MenuItem>
+                  )}
                   {addresses.map((address) => (
                     <MenuItem key={address.id} value={address.id}>
-                      {address.full_name} - {address.full_address}
+                      {address.full_name} - {address.phone} <br />
+                      {address.full_address}, {address.ward_name},{" "}
+                      {address.district_name}, {address.city_name}
                       {address.is_default === 1 && " (Mặc định)"}
                     </MenuItem>
                   ))}
                 </Select>
+                {!selectedAddress && addresses.length > 0 && (
+                  <FormHelperText error>Vui lòng chọn địa chỉ</FormHelperText>
+                )}
               </FormControl>
             ) : (
-              <Box sx={{ mt: 2 }}>
+              <Box sx={{ mt: 1 }}>
+                {" "}
+                {/* Reduced margin top */}
                 <TextField
                   fullWidth
+                  required
                   label="Họ và tên"
                   name="full_name"
                   value={newAddress.full_name}
                   onChange={handleAddressChange}
                   error={!!addressErrors.full_name}
                   helperText={addressErrors.full_name}
-                  margin="normal"
+                  margin="dense" // Use dense margin
                 />
                 <TextField
                   fullWidth
+                  required
                   label="Số điện thoại"
                   name="phone"
+                  type="tel"
                   value={newAddress.phone}
                   onChange={handleAddressChange}
                   error={!!addressErrors.phone}
                   helperText={addressErrors.phone}
-                  margin="normal"
+                  margin="dense" // Use dense margin
                 />
-                <FormControl fullWidth error={!!addressErrors.city_id} margin="normal">
+                <FormControl
+                  fullWidth
+                  required
+                  error={!!addressErrors.city_id}
+                  margin="dense"
+                >
                   <InputLabel>Tỉnh/Thành phố</InputLabel>
                   <Select
                     name="city_id"
-                    value={newAddress.city_id}
+                    value={newAddress.city_id || ""} // Handle 0 case
                     onChange={handleAddressChange}
                     label="Tỉnh/Thành phố"
                   >
+                    <MenuItem value="" disabled>
+                      <em>Chọn Tỉnh/Thành phố</em>
+                    </MenuItem>
                     {cities.map((city) => (
                       <MenuItem key={city.id} value={city.id}>
                         {city.name}
@@ -463,15 +750,23 @@ const Checkout: React.FC = () => {
                   </Select>
                   <FormHelperText>{addressErrors.city_id}</FormHelperText>
                 </FormControl>
-
-                <FormControl fullWidth error={!!addressErrors.district_id} margin="normal">
+                <FormControl
+                  fullWidth
+                  required
+                  error={!!addressErrors.district_id}
+                  margin="dense"
+                >
                   <InputLabel>Quận/Huyện</InputLabel>
                   <Select
                     name="district_id"
-                    value={newAddress.district_id}
+                    value={newAddress.district_id || ""} // Handle 0 case
                     onChange={handleAddressChange}
                     label="Quận/Huyện"
+                    disabled={!newAddress.city_id} // Disable if no city selected
                   >
+                    <MenuItem value="" disabled>
+                      <em>Chọn Quận/Huyện</em>
+                    </MenuItem>
                     {districts.map((district) => (
                       <MenuItem key={district.id} value={district.id}>
                         {district.name}
@@ -480,15 +775,23 @@ const Checkout: React.FC = () => {
                   </Select>
                   <FormHelperText>{addressErrors.district_id}</FormHelperText>
                 </FormControl>
-
-                <FormControl fullWidth error={!!addressErrors.ward_id} margin="normal">
+                <FormControl
+                  fullWidth
+                  required
+                  error={!!addressErrors.ward_id}
+                  margin="dense"
+                >
                   <InputLabel>Phường/Xã</InputLabel>
                   <Select
                     name="ward_id"
-                    value={newAddress.ward_id}
+                    value={newAddress.ward_id || ""} // Handle 0 case
                     onChange={handleAddressChange}
                     label="Phường/Xã"
+                    disabled={!newAddress.district_id} // Disable if no district selected
                   >
+                    <MenuItem value="" disabled>
+                      <em>Chọn Phường/Xã</em>
+                    </MenuItem>
                     {wards.map((ward) => (
                       <MenuItem key={ward.id} value={ward.id}>
                         {ward.name}
@@ -497,17 +800,18 @@ const Checkout: React.FC = () => {
                   </Select>
                   <FormHelperText>{addressErrors.ward_id}</FormHelperText>
                 </FormControl>
-
                 <TextField
                   fullWidth
-                  label="Địa chỉ chi tiết"
+                  required
+                  label="Địa chỉ chi tiết (Số nhà, tên đường)"
                   name="full_address"
                   value={newAddress.full_address}
                   onChange={handleAddressChange}
                   error={!!addressErrors.full_address}
                   helperText={addressErrors.full_address}
-                  margin="normal"
+                  margin="dense" // Use dense margin
                 />
+                {/* Button to save new address - removed as it's saved on submit */}
               </Box>
             )}
           </Paper>
@@ -520,9 +824,20 @@ const Checkout: React.FC = () => {
           Phương thức thanh toán
         </Typography>
         <FormControl component="fieldset">
-          <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            <FormControlLabel value="cod" control={<Radio />} label="Thanh toán khi nhận hàng (COD)" />
-            <FormControlLabel value="online" control={<Radio />} label="Thanh toán online (VNPay)" />
+          <RadioGroup
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <FormControlLabel
+              value="cod"
+              control={<Radio />}
+              label="Thanh toán khi nhận hàng (COD)"
+            />
+            <FormControlLabel
+              value="online"
+              control={<Radio />}
+              label="Thanh toán online (VNPay)"
+            />
           </RadioGroup>
         </FormControl>
       </Paper>
@@ -531,11 +846,13 @@ const Checkout: React.FC = () => {
       <Box textAlign="center" mt={3}>
         <Button
           variant="contained"
+          size="large"
           color="primary"
           onClick={handleSubmit}
-          disabled={!useNewAddress && !selectedAddress}
+          // Disable if using existing address and none is selected, OR if using new address and form is invalid (validation happens on submit)
+          disabled={(!useNewAddress && !selectedAddress) || cart.length === 0}
         >
-          Xác nhận thanh toán
+          {paymentMethod === "cod" ? "Đặt hàng" : "Tiến hành thanh toán VNPay"}
         </Button>
       </Box>
     </Container>

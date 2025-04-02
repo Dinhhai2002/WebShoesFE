@@ -189,14 +189,6 @@ const OrderDetail: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Tổng tiền
-                  </Typography>
-                  <Typography>{formatPrice(order.total_price)}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
                     Trạng thái đơn hàng
                   </Typography>
                   <Chip
@@ -343,6 +335,57 @@ const OrderDetail: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+             <Box sx={{ mt: 2 }}>
+              <Grid container justifyContent="flex-end" spacing={1}>
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    Giá ban đầu:
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    {formatPrice(order.order_detail.reduce((sum, detail) => sum + detail.total_price, 0))}
+                  </Typography>
+                </Grid>
+                {order.discount_amount > 0 && (
+                  <>
+                    <Grid item xs={6}>
+                      <Typography color="error" variant="body1" align="right">
+                        Giảm giá:
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography color="error" variant="body1" align="right">
+                        -{formatPrice(order.discount_amount)}
+                      </Typography>
+                    </Grid>
+                  </>
+                )}
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    Phí ship:
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body1" align="right">
+                    {formatPrice(order.amount_shipping)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="h6" align="right">
+                    Tổng tiền:
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="h6" align="right">
+                    {formatPrice(order.total_price)}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Box>
           </Paper>
         </Grid>
       </Grid>
