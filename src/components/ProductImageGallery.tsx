@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Grid, Card, CardMedia } from "@mui/material";
 
 interface ProductImageGalleryProps {
@@ -7,6 +7,12 @@ interface ProductImageGalleryProps {
 
 const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({ images }) => {
     const [selectedImage, setSelectedImage] = useState(images[0]);
+
+    useEffect(() => {
+        if (images && images.length > 0) {
+            setSelectedImage(images[0]);
+        }
+    }, [images]);
 
     return (
         <Box>

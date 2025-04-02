@@ -142,7 +142,7 @@ const ProductDetailPage: React.FC = () => {
                 if (response.data.list.length > 0) {
                     setProductDetail(response.data.list[0]);
                     // Update product images from the selected product detail
-                    // setProductImages(response.data.list[0].image_url ? [response.data.list[0].image_url] : []);
+                    setProductImages(response.data.list[0].image_url ? [response.data.list[0].image_url] : []);
                 } else {
                     setProductDetail(null);
                     // setProductImages([]);
