@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import orderApi from '../services/API/OrderApi';
 import { PaymentStatusEnum } from '../utils/enum/PaymentStatusEnum';
 import { toast } from 'react-toastify';
+import { routes } from '../routes/routes';
 
 const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -153,7 +154,7 @@ const PaymentSuccess: React.FC = () => {
           </Button>
           <Button
             variant="outlined"
-            onClick={() => navigate('/list-product')}
+            onClick={() => navigate(routes.ProductList)}
           >
             Tiếp tục mua sắm
           </Button>

@@ -10,6 +10,7 @@ export const routes = {
   OrderHistory: "/order-history",
   Checkout: "/checkout",
   ProductDetail: "/product-detail/:id",
+  ProductList: "/products",
 };
 
 // export const publicRoutes = [

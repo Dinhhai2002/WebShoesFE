@@ -214,6 +214,57 @@ const OrderDetail: React.FC = () => {
           </Paper>
         </Grid>
 
+        {/* Voucher Information */}
+        {order.voucher && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Thông tin Voucher
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Mã Voucher
+                    </Typography>
+                    <Typography>{order.voucher.code}</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Loại giảm giá
+                    </Typography>
+                    <Typography>
+                      {order.voucher.discount_type === 1 ? 'Phần trăm' : 'Tiền mặt'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Giá trị giảm
+                    </Typography>
+                    <Typography>
+                      {order.voucher.discount_type === 1
+                        ? `${order.voucher.discount_value}%`
+                        : formatPrice(order.voucher.discount_value)}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Giá trị tối đa
+                    </Typography>
+                    <Typography>{formatPrice(order.voucher.max_discount)}</Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        )}
+
         {/* Địa chỉ giao hàng */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>

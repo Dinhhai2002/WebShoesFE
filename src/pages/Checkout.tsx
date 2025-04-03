@@ -22,7 +22,13 @@ import {
   Select,
   FormHelperText,
   InputLabel,
-  SelectChangeEvent, // Import SelectChangeEvent
+  SelectChangeEvent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions, // Import SelectChangeEvent
+  CircularProgress,
 } from "@mui/material";
 // Import Voucher and ApplyVoucherResponse, assume CartItem is exported from CartContext
 import { CartContext, CartItem } from "../context/CartContext";
@@ -41,6 +47,7 @@ import authenticationApiService from "../services/API/AuthenticationApiService";
 import { useNavigate } from "react-router-dom";
 
 const Checkout: React.FC = () => {
+  const [loading, setLoading] = useState(false);
   const [addresses, setAddresses] = useState<AddressBook[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<AddressBook | null>(
     null
@@ -70,6 +77,7 @@ const Checkout: React.FC = () => {
   const [discount, setDiscount] = useState(0);
   const cartContext = useContext(CartContext); // Get the context object
   const navigate = useNavigate();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Destructure after checking context exists to satisfy TypeScript
   const cart = cartContext?.cart || [];
@@ -382,6 +390,7 @@ const Checkout: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
     try {
       let addressId: number | null = null; // Initialize as null
 
@@ -410,6 +419,7 @@ const Checkout: React.FC = () => {
 
       // Ensure addressId is set before proceeding
       if (addressId === null) {
+        setConfirmOpen(false);
         toast.error("Đã có lỗi xảy ra với địa chỉ giao hàng.");
         return;
       }
@@ -427,13 +437,12 @@ const Checkout: React.FC = () => {
 
       // Create order
       const response = await orderApi.create(orderRequest);
-
+      setConfirmOpen(false);
       if (paymentMethod === "cod") {
         // Reset cart after successful order creation
         resetCart();
         // For COD, redirect to success page with cod=true parameter
         navigate("/payment-success?cod=true");
-        toast.success("Đặt hàng thành công! Vui lòng chờ xác nhận.");
       } else {
         // For online payment, redirect to payment URL
         if (
@@ -451,12 +460,15 @@ const Checkout: React.FC = () => {
         }
       }
     } catch (error: any) {
+      setConfirmOpen(false);
       console.error("Error creating order:", error);
       toast.error(
         error.response?.data?.message ||
           error.message ||
           "Đã có lỗi xảy ra khi đặt hàng!"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -844,17 +856,43 @@ const Checkout: React.FC = () => {
 
       {/* Nút Xác nhận thanh toán */}
       <Box textAlign="center" mt={3}>
-        <Button
-          variant="contained"
-          size="large"
-          color="primary"
-          onClick={handleSubmit}
-          // Disable if using existing address and none is selected, OR if using new address and form is invalid (validation happens on submit)
-          disabled={(!useNewAddress && !selectedAddress) || cart.length === 0}
-        >
-          {paymentMethod === "cod" ? "Đặt hàng" : "Tiến hành thanh toán VNPay"}
-        </Button>
-      </Box>
+          <Button
+            variant="contained"
+            size="large"
+            color="primary"
+            onClick={() => setConfirmOpen(true)}
+            // Disable if using existing address and none is selected, OR if using new address and form is invalid (validation happens on submit)
+            disabled={(!useNewAddress && !selectedAddress) || cart.length === 0 || loading}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              paymentMethod === "cod" ? "Đặt hàng" : "Tiến hành thanh toán VNPay"
+            )}
+          </Button>
+        </Box>
+
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Xác nhận"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Bạn có chắc chắn muốn mua đơn hàng này?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)} color="primary">
+            Hủy bỏ
+          </Button>
+          <Button onClick={handleSubmit} color="primary" autoFocus disabled={loading}>
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Xác nhận"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

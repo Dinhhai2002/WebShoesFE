@@ -2,6 +2,7 @@ import { AxiosResponse } from "axios";
 import BaseApiService from "./BaseApiService";
 import { StatusOrderEnum } from "../../utils/enum/StatusOrderEnum";
 import { PaymentStatusEnum } from "../../utils/enum/PaymentStatusEnum";
+import { Voucher } from "./VoucherApi";
 
 // Types
 interface ProductDetail {
@@ -54,6 +55,7 @@ export interface Order {
     shipping_city_id: number;
     shipping_city_name: string;
     shipping_address: string;
+    voucher : Voucher
 }
 
 interface OrderQueryParams {
