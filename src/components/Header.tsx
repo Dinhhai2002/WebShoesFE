@@ -1,23 +1,24 @@
-import React, { useState, useEffect, useContext } from "react";
+import * as React from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   AppBar,
-  Toolbar,
   Box,
+  Toolbar,
+  IconButton,
   Typography,
+  Menu,
+  Avatar,
+  Button,
+  MenuItem,
   TextField,
   InputAdornment,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  Avatar,
-  Badge,
   List,
   ListItem,
-  ListItemButton,
   ListItemText,
   Paper,
   Divider,
+  CircularProgress,
+  Badge
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -27,14 +28,36 @@ import HistoryIcon from "@mui/icons-material/History";
 import { debounce } from "lodash";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { Link, NavLink as RouterLink, useNavigate } from "react-router-dom";
+import { NavLink as RouterLink, useNavigate } from "react-router-dom";
 import { routes } from "../routes/routes";
+import authenticationApiService from '../services/API/AuthenticationApiService';
+
+interface ProductDetailResponse {
+  id: number;
+  name: string;
+  product_id: number;
+  color_id: number;
+  color: string;
+  size_id: number;
+  size: string;
+  material_id: number;
+  material: string;
+  brand_id: number;
+  brand: string;
+  category_id: number;
+  category: string;
+  stock: number;
+  price: number;
+  image_url: string;
+  status: number;
+}
 
 const Header: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [cartAnchorEl, setCartAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<ProductDetailResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, logout } = useAuth();
   const cartContext = useContext(CartContext);
   const navigate = useNavigate();
@@ -49,25 +72,53 @@ const Header: React.FC = () => {
     }
   }, []);
 
-  // Fake API call
+  // Fetch suggestions using getProductDetails API
   const fetchSuggestions = async (query: string) => {
     if (!query) {
       setSuggestions([]);
       return;
     }
-    // Giả lập dữ liệu từ API
-    const mockData = [
-      "Giày Nike",
-      "Giày Adidas",
-      "Giày Puma",
-      "Giày Vans",
-      "Giày Converse",
-    ];
-    setSuggestions(
-      mockData.filter((item) =>
-        item.toLowerCase().includes(query.toLowerCase())
-      )
-    );
+
+    try {
+      setIsLoading(true);
+      const response = await authenticationApiService.getProductDetails({
+        key_search: query,
+        status: 1,
+        limit: 5 // Limit to 5 suggestions
+      });
+      
+      if (response.data?.list) {
+        // Transform API response to ProductDetailResponse
+        const transformedSuggestions = response.data.list.map(detail => {
+          const productDetail = detail as any;
+          return {
+            id: productDetail.id,
+            name: productDetail.name,
+            product_id: productDetail.product_id,
+            color_id: productDetail.color_id,
+            color: productDetail.color,
+            size_id: productDetail.size_id,
+            size: productDetail.size,
+            material_id: productDetail.material_id,
+            material: productDetail.material,
+            brand_id: productDetail.brand_id,
+            brand: productDetail.brand,
+            category_id: productDetail.category_id,
+            category: productDetail.category,
+            stock: productDetail.stock,
+            price: productDetail.price,
+            image_url: productDetail.image_url,
+            status: productDetail.status
+          };
+        });
+        setSuggestions(transformedSuggestions);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Debounce API call
@@ -78,18 +129,24 @@ const Header: React.FC = () => {
     return () => debouncedFetchSuggestions.cancel();
   }, [searchTerm]);
 
+  const handleSearchClick = (suggestion: ProductDetailResponse) => {
+    navigate(`/product/${suggestion.product_id}`, {
+      state: {
+        colorId: suggestion.color_id,
+        sizeId: suggestion.size_id,
+        materialId: suggestion.material_id
+      }
+    });
+    setSearchTerm('');
+    setSuggestions([]);
+  };
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    setSearchTerm(suggestion);
-    setSuggestions([]);
-    handleSearch(suggestion);
   };
 
   const handleCartMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -113,18 +170,6 @@ const Header: React.FC = () => {
     // Gọi hàm logout từ AuthContext
     logout();
     handleMenuClose();
-  };
-
-  const handleSearch = (term: string) => {
-    if (term.trim()) {
-      navigate(`/products?search=${encodeURIComponent(term.trim())}`);
-    }
-  };
-
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      handleSearch(searchTerm);
-    }
   };
 
   const formatCurrency = (value: number) => {
@@ -165,41 +210,103 @@ const Header: React.FC = () => {
         </Box>
 
         {/* Thanh tìm kiếm */}
-        <Box sx={{ flexGrow: 1, mx: 3, position: "relative" }}>
+        <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', position: 'relative' }}>
           <TextField
-            fullWidth
-            placeholder="Tìm kiếm sản phẩm..."
-            variant="outlined"
             size="small"
+            placeholder="Tìm kiếm sản phẩm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={handleKeyPress}
+            sx={{
+              width: '50%',
+              bgcolor: 'white',
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: '#e0e0e0',
+                  borderWidth: 2,
+                },
+                '&:hover fieldset': {
+                  borderColor: 'primary.main',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'primary.main',
+                },
+              },
+              '& .MuiInputBase-input': {
+                padding: '10px 14px',
+              }
+            }}
             InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton 
-                    color="primary"
-                    onClick={() => handleSearch(searchTerm)}
-                  >
-                    <SearchIcon />
-                  </IconButton>
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
                 </InputAdornment>
               ),
+              endAdornment: isLoading && (
+                <InputAdornment position="end">
+                  <CircularProgress size={20} />
+                </InputAdornment>
+              )
             }}
           />
           {/* Gợi ý tìm kiếm */}
-          {suggestions.length > 0 && (
+          {suggestions.length > 0 && searchTerm && (
             <Paper
-              sx={{ position: "absolute", width: "100%", zIndex: 10, mt: 1 }}
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: '25%',
+                right: '25%',
+                zIndex: 1000,
+                mt: 1,
+                maxHeight: '400px',
+                overflow: 'auto'
+              }}
             >
               <List>
-                {suggestions.map((suggestion, index) => (
-                  <ListItem key={index} disablePadding>
-                    <ListItemButton
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
-                      <ListItemText primary={suggestion} />
-                    </ListItemButton>
+                {suggestions.map((suggestion) => (
+                  <ListItem
+                    key={suggestion.id}
+                    onClick={() => handleSearchClick(suggestion)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'action.hover'
+                      },
+                      display: 'flex',
+                      gap: 2,
+                      py: 1
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={suggestion.image_url || '/placeholder-image.jpg'}
+                      alt={suggestion.name}
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        objectFit: 'cover',
+                        borderRadius: 1
+                      }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <ListItemText 
+                        primary={
+                          <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                            {suggestion.name}
+                          </Typography>
+                        }
+                        secondary={
+                          <>
+                            <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
+                              {suggestion.price.toLocaleString('vi-VN')}đ
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {suggestion.color} - {suggestion.size} - {suggestion.material}
+                            </Typography>
+                          </>
+                        }
+                      />
+                    </Box>
                   </ListItem>
                 ))}
               </List>
@@ -255,21 +362,62 @@ const Header: React.FC = () => {
                 </MenuItem>
               ) : (
                 <Box>
-                  {cart.map((item) => (
+                  {cart.map((item, index) => (
                     item && item.product_detail ? (
-                      <MenuItem key={item.id} sx={{ py: 1 }}>
+                      <MenuItem key={index} sx={{ py: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                           <img 
                             src={item.product_detail.image_url} 
                             alt={item.product_detail.name}
                             style={{ width: 50, height: 50, objectFit: 'cover', marginRight: 10 }}
                           />
-                          <Box sx={{ flexGrow: 1 }}>
-                            <Typography variant="body2" noWrap>
-                              {item.product_detail.name}
-                            </Typography>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <ListItemText
+                              primary={
+                                <Typography
+                                  variant="subtitle1"
+                                  sx={{
+                                    fontWeight: 'medium',
+                                    textOverflow: 'ellipsis',
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {item.product_detail.name}
+                                </Typography>
+                              }
+                              secondary={
+                                <>
+                                  <Typography
+                                    variant="body2"
+                                    color="primary"
+                                    sx={{
+                                      fontWeight: 'bold',
+                                      textOverflow: 'ellipsis',
+                                      overflow: 'hidden',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    {item.product_detail.price.toLocaleString('vi-VN')}đ
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{
+                                      textOverflow: 'ellipsis',
+                                      overflow: 'hidden',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    {item.product_detail.color} - {item.product_detail.size} - {item.product_detail.material}
+                                  </Typography>
+                                </>
+                              }
+                            />
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Typography variant="body2" color="text.secondary">
-                              {formatCurrency(item.product_detail.price)} x {item.quantity}
+                              x{item.quantity}
                             </Typography>
                           </Box>
                         </Box>

@@ -30,6 +30,9 @@ const ProductDetailPage: React.FC = () => {
     const [colors, setColors] = useState<Color[]>([]);
     const [sizes, setSizes] = useState<Size[]>([]);
     const [materials, setMaterials] = useState<Material[]>([]);
+    const [availableColors, setAvailableColors] = useState<Color[]>([]);
+    const [availableSizes, setAvailableSizes] = useState<Size[]>([]);
+    const [availableMaterials, setAvailableMaterials] = useState<Material[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedColor, setSelectedColor] = useState<Color | null>(null);
@@ -52,37 +55,59 @@ const ProductDetailPage: React.FC = () => {
                 setProduct(productResponse.data);
                 setProductImages(productResponse.data.images);
 
-                // Fetch options
+                // Fetch all product details to get available options
+                const productDetailsResponse = await authenticationApiService.getProductDetails({
+                    product_id: Number(id),
+                    status: 1
+                });
+
+                const productDetails = productDetailsResponse.data.list;
+
+                // Get unique available options from product details
+                const uniqueColors = new Set(productDetails.map(detail => detail.color_id));
+                const uniqueSizes = new Set(productDetails.map(detail => detail.size_id));
+                const uniqueMaterials = new Set(productDetails.map(detail => detail.material_id));
+
+                // Fetch all options
                 const [colorsResponse, sizesResponse, materialsResponse] = await Promise.all([
                     authenticationApiService.getColors({ status: 1 }),
                     authenticationApiService.getSizes({ status: 1 }),
                     authenticationApiService.getMaterials({ status: 1 })
                 ]);
 
+                // Filter available options
+                const availableColorsData = colorsResponse.data.list.filter(color => uniqueColors.has(color.id));
+                const availableSizesData = sizesResponse.data.list.filter(size => uniqueSizes.has(size.id));
+                const availableMaterialsData = materialsResponse.data.list.filter(material => uniqueMaterials.has(material.id));
+
                 setColors(colorsResponse.data.list);
                 setSizes(sizesResponse.data.list);
                 setMaterials(materialsResponse.data.list);
 
-                // Set selections based on passed options or defaults
-                if (initialOptions.colorId) {
-                    const color = colorsResponse.data.list.find(c => c.id === initialOptions.colorId);
+                setAvailableColors(availableColorsData);
+                setAvailableSizes(availableSizesData);
+                setAvailableMaterials(availableMaterialsData);
+
+                // Set initial selections based on available options
+                if (initialOptions.colorId && availableColorsData.some(c => c.id === initialOptions.colorId)) {
+                    const color = availableColorsData.find(c => c.id === initialOptions.colorId);
                     if (color) setSelectedColor(color);
-                } else if (colorsResponse.data.list.length > 0) {
-                    setSelectedColor(colorsResponse.data.list[0]);
+                } else if (availableColorsData.length > 0) {
+                    setSelectedColor(availableColorsData[0]);
                 }
 
-                if (initialOptions.sizeId) {
-                    const size = sizesResponse.data.list.find(s => s.id === initialOptions.sizeId);
+                if (initialOptions.sizeId && availableSizesData.some(s => s.id === initialOptions.sizeId)) {
+                    const size = availableSizesData.find(s => s.id === initialOptions.sizeId);
                     if (size) setSelectedSize(size);
-                } else if (sizesResponse.data.list.length > 0) {
-                    setSelectedSize(sizesResponse.data.list[0]);
+                } else if (availableSizesData.length > 0) {
+                    setSelectedSize(availableSizesData[0]);
                 }
 
-                if (initialOptions.materialId) {
-                    const material = materialsResponse.data.list.find(m => m.id === initialOptions.materialId);
+                if (initialOptions.materialId && availableMaterialsData.some(m => m.id === initialOptions.materialId)) {
+                    const material = availableMaterialsData.find(m => m.id === initialOptions.materialId);
                     if (material) setSelectedMaterial(material);
-                } else if (materialsResponse.data.list.length > 0) {
-                    setSelectedMaterial(materialsResponse.data.list[0]);
+                } else if (availableMaterialsData.length > 0) {
+                    setSelectedMaterial(availableMaterialsData[0]);
                 }
             } catch (err) {
                 setError("Không thể tải thông tin sản phẩm");
@@ -212,7 +237,7 @@ const ProductDetailPage: React.FC = () => {
             } else {
                 // Nếu chưa có, thêm mới với số lượng đã chọn và đầy đủ thông tin sản phẩm
                 const cartItem = {
-                    id: Date.now(), // Tạo ID tạm thời cho localStorage
+                    id: Date.now(), // Tạo ID tạm thởi cho localStorage
                     cart_id: 0,
                     product_detail_id: productDetail.id,
                     quantity: quantity,
@@ -276,47 +301,62 @@ const ProductDetailPage: React.FC = () => {
 
                     <Divider sx={{ my: 2 }} />
 
-                    <Typography variant="subtitle1" fontWeight="bold">Màu sắc:</Typography>
-                    <ToggleButtonGroup 
-                        value={selectedColor?.id || ''} 
-                        exclusive 
-                        onChange={(_, value) => {
-                            const color = colors.find(c => c.id === value);
-                            if (color) setSelectedColor(color);
-                        }}
-                    >
-                        {colors.map((color) => (
-                            <ToggleButton key={color.id} value={color.id}>{color.name}</ToggleButton>
-                        ))}
-                    </ToggleButtonGroup>
+                    {/* Màu sắc */}
+                    {availableColors.length > 0 && (
+                        <>
+                            <Typography variant="subtitle1" fontWeight="bold">Màu sắc:</Typography>
+                            <ToggleButtonGroup 
+                                value={selectedColor?.id || ''} 
+                                exclusive 
+                                onChange={(_, value) => {
+                                    const color = availableColors.find(c => c.id === value);
+                                    if (color) setSelectedColor(color);
+                                }}
+                            >
+                                {availableColors.map((color) => (
+                                    <ToggleButton key={color.id} value={color.id}>{color.name}</ToggleButton>
+                                ))}
+                            </ToggleButtonGroup>
+                        </>
+                    )}
 
-                    <Typography variant="subtitle1" fontWeight="bold" mt={2}>Kích thước:</Typography>
-                    <ToggleButtonGroup 
-                        value={selectedSize?.id || ''} 
-                        exclusive 
-                        onChange={(_, value) => {
-                            const size = sizes.find(s => s.id === value);
-                            if (size) setSelectedSize(size);
-                        }}
-                    >
-                        {sizes.map((size) => (
-                            <ToggleButton key={size.id} value={size.id}>{size.name}</ToggleButton>
-                        ))}
-                    </ToggleButtonGroup>
+                    {/* Kích thước */}
+                    {availableSizes.length > 0 && (
+                        <>
+                            <Typography variant="subtitle1" fontWeight="bold" mt={2}>Kích thước:</Typography>
+                            <ToggleButtonGroup 
+                                value={selectedSize?.id || ''} 
+                                exclusive 
+                                onChange={(_, value) => {
+                                    const size = availableSizes.find(s => s.id === value);
+                                    if (size) setSelectedSize(size);
+                                }}
+                            >
+                                {availableSizes.map((size) => (
+                                    <ToggleButton key={size.id} value={size.id}>{size.name}</ToggleButton>
+                                ))}
+                            </ToggleButtonGroup>
+                        </>
+                    )}
 
-                    <Typography variant="subtitle1" fontWeight="bold" mt={2}>Chất liệu:</Typography>
-                    <ToggleButtonGroup 
-                        value={selectedMaterial?.id || ''} 
-                        exclusive 
-                        onChange={(_, value) => {
-                            const material = materials.find(m => m.id === value);
-                            if (material) setSelectedMaterial(material);
-                        }}
-                    >
-                        {materials.map((material) => (
-                            <ToggleButton key={material.id} value={material.id}>{material.name}</ToggleButton>
-                        ))}
-                    </ToggleButtonGroup>
+                    {/* Chất liệu */}
+                    {availableMaterials.length > 0 && (
+                        <>
+                            <Typography variant="subtitle1" fontWeight="bold" mt={2}>Chất liệu:</Typography>
+                            <ToggleButtonGroup 
+                                value={selectedMaterial?.id || ''} 
+                                exclusive 
+                                onChange={(_, value) => {
+                                    const material = availableMaterials.find(m => m.id === value);
+                                    if (material) setSelectedMaterial(material);
+                                }}
+                            >
+                                {availableMaterials.map((material) => (
+                                    <ToggleButton key={material.id} value={material.id}>{material.name}</ToggleButton>
+                                ))}
+                            </ToggleButtonGroup>
+                        </>
+                    )}
 
                     <Divider sx={{ my: 2 }} />
 

@@ -112,7 +112,22 @@ interface OtpRegisterRequest {
   full_address: string;
 }
 
-
+interface ProductDetailResponse {
+  id: number;
+  product_id: number;
+  name: string;
+  color_id: number;
+  size_id: number;
+  material_id: number;
+  brand_id: number;
+  category_id: number;
+  quantity: number;
+  price: number;
+  discount: number;
+  status: number;
+  created_at: Date;
+  updated_at: Date;
+}
 
 class AuthenticationApiService extends BaseApiService {
   public async Login(user_name: any, password: any): Promise<any> {
@@ -561,6 +576,23 @@ class AuthenticationApiService extends BaseApiService {
 
       handleResponseApi.handleResponse(response);
 
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get suggestion products
+  async getSuggestionProducts(keyword: string, page: number = 1, limit: number = 10): Promise<ApiResponse<ListResponse<ProductDetailResponse>>> {
+    try {
+      const response = await this.api.get(`/${prefix}/products/suggestion`, {
+        params: {
+          keyword,
+          page,
+          limit
+        }
+      });
+      handleResponseApi.handleResponse(response);
       return response.data;
     } catch (error: any) {
       throw new Error(error.message);

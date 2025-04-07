@@ -450,8 +450,8 @@ const Checkout: React.FC = () => {
           response.data.startsWith("http")
         ) {
           // Reset cart before redirecting
-          resetCart();
           window.location.href = response.data;
+          resetCart();
         } else {
           console.error("Invalid payment URL received:", response.data);
           toast.error(
@@ -464,8 +464,8 @@ const Checkout: React.FC = () => {
       console.error("Error creating order:", error);
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Đã có lỗi xảy ra khi đặt hàng!"
+        error.message ||
+        "Đã có lỗi xảy ra khi đặt hàng!"
       );
     } finally {
       setLoading(false);
@@ -554,7 +554,7 @@ const Checkout: React.FC = () => {
                     handleVoucherSelect(selected);
                   }}
                   displayEmpty
-                  // Removed renderValue prop to rely on default MenuItem display
+                // Removed renderValue prop to rely on default MenuItem display
                 >
                   {selectedVoucher ? (
                     <MenuItem value="">
@@ -856,21 +856,21 @@ const Checkout: React.FC = () => {
 
       {/* Nút Xác nhận thanh toán */}
       <Box textAlign="center" mt={3}>
-          <Button
-            variant="contained"
-            size="large"
-            color="primary"
-            onClick={() => setConfirmOpen(true)}
-            // Disable if using existing address and none is selected, OR if using new address and form is invalid (validation happens on submit)
-            disabled={(!useNewAddress && !selectedAddress) || cart.length === 0 || loading}
-          >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              paymentMethod === "cod" ? "Đặt hàng" : "Tiến hành thanh toán VNPay"
-            )}
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          size="large"
+          color="primary"
+          onClick={() => setConfirmOpen(true)}
+          // Disable if using existing address and none is selected, OR if using new address and form is invalid (validation happens on submit)
+          disabled={(!useNewAddress && !selectedAddress) || cart.length === 0 || loading}
+        >
+          {loading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            paymentMethod === "cod" ? "Đặt hàng" : "Tiến hành thanh toán VNPay"
+          )}
+        </Button>
+      </Box>
 
       <Dialog
         open={confirmOpen}

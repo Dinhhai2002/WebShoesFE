@@ -148,7 +148,7 @@ const Login = () => {
                 </StyledLink>
               </Grid>
             </Grid>
-            <Divider sx={{ my: 4 }}>hoặc</Divider>
+            {/* <Divider sx={{ my: 4 }}>hoặc</Divider>
             <GoogleOAuthProvider
               clientId={process.env.REACT_APP_KEY_LOGIN_GOOGLE || ""}
             >
@@ -162,7 +162,7 @@ const Login = () => {
                   loginGoogleError(error);
                 }}
               />
-            </GoogleOAuthProvider>
+            </GoogleOAuthProvider> */}
           </StyledForm>
         </StyledPaper>
       </Grid>
