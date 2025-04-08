@@ -58,7 +58,9 @@ const ProductDetailPage: React.FC = () => {
                 // Fetch all product details to get available options
                 const productDetailsResponse = await authenticationApiService.getProductDetails({
                     product_id: Number(id),
-                    status: 1
+                    status: 1,
+                    page: 1,
+                    limit: 500
                 });
 
                 const productDetails = productDetailsResponse.data.list;
@@ -207,8 +209,14 @@ const ProductDetailPage: React.FC = () => {
     }, [product]);
 
     const handleQuantityChange = (type: 'increase' | 'decrease') => {
+        if (!productDetail) return;
+
         if (type === 'increase') {
-            setQuantity(prev => prev + 1);
+            if (quantity < productDetail.stock) {
+                setQuantity(prev => prev + 1);
+            } else {
+                toast.warning(`Số lượng tối đa là ${productDetail.stock} sản phẩm`);
+            }
         } else {
             if (quantity > 1) {
                 setQuantity(prev => prev - 1);
@@ -378,12 +386,40 @@ const ProductDetailPage: React.FC = () => {
                             </Typography>
                             <IconButton 
                                 onClick={() => handleQuantityChange('increase')}
+                                disabled={quantity >= (productDetail?.stock || 0)}
                                 size="small"
                             >
                                 <AddIcon />
                             </IconButton>
                         </Box>
                     </Box>
+
+                    {/* Hiển thị số lượng tồn kho */}
+                    {productDetail && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mr: 2 }}>
+                                Tồn kho:
+                            </Typography>
+                            <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                gap: 1,
+                                p: 1,
+                                borderRadius: 1,
+                                border: '1px solid #e0e0e0',
+                                backgroundColor: productDetail.stock > 10 ? '#e8f5e9' :
+                                                productDetail.stock > 0 ? '#fff3e0' : '#ffebee'
+                            }}>
+                                <Typography 
+                                    color={productDetail.stock > 10 ? 'success.main' :
+                                            productDetail.stock > 0 ? 'warning.main' : 'error.main'}
+                                    fontWeight="bold"
+                                >
+                                    {productDetail.stock}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )}
 
                     <Button 
                         variant="contained"

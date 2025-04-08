@@ -151,7 +151,7 @@ const PaymentSuccess: React.FC = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/')} 
             sx={{ mr: 2 }}
           >
             Về trang chủ
@@ -159,8 +159,16 @@ const PaymentSuccess: React.FC = () => {
           <Button
             variant="outlined"
             onClick={() => navigate(routes.ProductList)}
+            sx={{ mr: 2 }}
           >
             Tiếp tục mua sắm
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => navigate(routes.OrderHistory)}
+          >
+            Xem lịch sử đơn hàng
           </Button>
         </Box>
       </Box>
