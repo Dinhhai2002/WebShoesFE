@@ -439,8 +439,7 @@ const Checkout: React.FC = () => {
       const response = await orderApi.create(orderRequest);
       setConfirmOpen(false);
       if (paymentMethod === "cod") {
-        // Reset cart after successful order creation
-        resetCart();
+        
         // For COD, redirect to success page with cod=true parameter
         navigate("/payment-success?cod=true");
       } else {
@@ -451,7 +450,6 @@ const Checkout: React.FC = () => {
         ) {
           // Reset cart before redirecting
           window.location.href = response.data;
-          resetCart();
         } else {
           console.error("Invalid payment URL received:", response.data);
           toast.error(

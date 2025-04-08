@@ -6,6 +6,7 @@ import orderApi from '../services/API/OrderApi';
 import { PaymentStatusEnum } from '../utils/enum/PaymentStatusEnum';
 import { toast } from 'react-toastify';
 import { routes } from '../routes/routes';
+import { CartContext } from '../context/CartContext';
 
 const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const PaymentSuccess: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const hasUpdatedRef = useRef(false);
+  const { resetCart } = React.useContext(CartContext);
 
   useEffect(() => {
     const updateOrderStatus = async () => {
@@ -34,6 +36,7 @@ const PaymentSuccess: React.FC = () => {
           // Trường hợp thanh toán COD
           setIsSuccess(true);
           toast.success('Đặt hàng thành công!');
+          resetCart();
         } else if (vnp_ResponseCode === '00') {
           // Trường hợp thanh toán online thành công
           if (!orderId) {
@@ -45,6 +48,7 @@ const PaymentSuccess: React.FC = () => {
           await orderApi.changePaymentStatus(parseInt(orderId), PaymentStatusEnum.PAID);
           setIsSuccess(true);
           toast.success('Thanh toán thành công!');
+          resetCart();
         } else {
           // Trường hợp thanh toán online thất bại
           if (!orderId) {

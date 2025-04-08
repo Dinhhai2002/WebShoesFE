@@ -11,7 +11,7 @@ interface StatusConfig {
 export const orderStatusConfig: Record<StatusOrderEnum, StatusConfig> = {
   [StatusOrderEnum.PENDING]: { color: 'warning', label: 'Chờ xác nhận' },
   [StatusOrderEnum.CONFIRMED]: { color: 'info', label: 'Đã xác nhận' },
-  [StatusOrderEnum.PROCESSING]: { color: 'primary', label: 'Đang xử lý' },
+  [StatusOrderEnum.PROCESSING]: { color: 'primary', label: 'Đang chuẩn bị hàng' },
   [StatusOrderEnum.SHIPPED]: { color: 'secondary', label: 'Đang giao hàng' },
   [StatusOrderEnum.DELIVERED]: { color: 'success', label: 'Đã giao hàng' },
   [StatusOrderEnum.CANCELLED]: { color: 'error', label: 'Đã hủy' }
