@@ -381,6 +381,18 @@ const OrderDetail: React.FC = () => {
                       <TableCell align="right">{formatPrice(detail.price)}</TableCell>
                       <TableCell align="right">{detail.quantity}</TableCell>
                       <TableCell align="right">{formatPrice(detail.total_price)}</TableCell>
+                    {order.status === StatusOrderEnum.DELIVERED && (
+                      <TableCell>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="primary"
+                          onClick={() => handleReviewOpen(detail.product_detail.product_id, detail.product_detail.name)}
+                        >
+                          Đánh giá
+                        </Button>
+                      </TableCell>
+                    )}
                     </TableRow>
                   ))}
                 </TableBody>
