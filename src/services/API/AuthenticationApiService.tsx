@@ -183,7 +183,7 @@ class AuthenticationApiService extends BaseApiService {
     try {
       const response = await this.api.post(
         `/authentication/register`,
-        data
+        { ...data, role: 1 }
       );
 
       if (response.data.status === 400) {
@@ -203,7 +203,7 @@ class AuthenticationApiService extends BaseApiService {
     try {
       const response = await this.api.post(
         `/${prefix}/otp-register`,
-        data
+        { ...data, role: 1 }
       );
 
       if (response.data.status === 400) {

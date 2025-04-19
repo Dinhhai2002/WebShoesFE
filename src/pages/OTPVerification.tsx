@@ -59,6 +59,7 @@ const OTPVerification: React.FC = () => {
         // Nếu là đăng ký, gọi API đăng ký sau khi xác nhận OTP
         await authenticationApiService.Register(verificationData);
         localStorage.removeItem('registerData');
+        navigate('/authentication/login');
       } else if(verificationType === 'forgot') {
         // Nếu là quên mật khẩu, chuyển đến trang đặt lại mật khẩu
         navigate('/authentication/reset-password');
