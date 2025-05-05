@@ -67,7 +67,7 @@ const Home: React.FC = () => {
     }, []);
 
     const handleCategoryClick = (categoryId: number) => {
-        navigate(`/products?category=${categoryId}`);
+        navigate(`/products?category_id=${categoryId}`);
     };
 
     const handleSeeAllCategories = () => {
@@ -75,7 +75,7 @@ const Home: React.FC = () => {
     };
 
     const handleBrandClick = (brandId: number) => {
-        navigate(`/products?brand=${brandId}`);
+        navigate(`/products?brand_id=${brandId}`);
     };
 
     const handleSeeAllBrands = () => {

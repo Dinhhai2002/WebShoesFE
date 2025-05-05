@@ -69,8 +69,8 @@ const ProductList = () => {
   });
 
   useEffect(() => {
-    const categoryFromUrl = searchParams.get('category');
-    const brandFromUrl = searchParams.get('brand');
+    const categoryFromUrl = searchParams.get('category_id');
+    const brandFromUrl = searchParams.get('brand_id');
     const searchFromUrl = searchParams.get('search');
     
     if (brandFromUrl) {
