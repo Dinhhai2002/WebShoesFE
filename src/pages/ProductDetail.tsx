@@ -425,7 +425,7 @@ const ProductDetailPage: React.FC = () => {
                         variant="contained"
                         color="primary"
                         size="large" 
-                        disabled={!productDetail}
+                        disabled={!productDetail || productDetail.stock <= 0}
                         startIcon={<ShoppingCartIcon />}
                         onClick={handleAddToCart}
                         sx={{
@@ -439,7 +439,7 @@ const ProductDetailPage: React.FC = () => {
                             }
                         }}
                     >
-                        {productDetail ? "Thêm vào giỏ hàng" : "Sản phẩm không khả dụng"}
+                        {productDetail && productDetail.stock > 0 ? "Thêm vào giỏ hàng" : "Sản phẩm không khả dụng"}
                     </Button>
                 </Grid>
             </Grid>
