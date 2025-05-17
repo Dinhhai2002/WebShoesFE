@@ -75,6 +75,8 @@ const Checkout: React.FC = () => {
     null
   ); // State for best voucher info
   const [discount, setDiscount] = useState(0);
+  const [voucherLoading, setVoucherLoading] = useState(false); // State for voucher loading
+  const [applyingVoucher, setApplyingVoucher] = useState(false); // State for applying voucher
   const cartContext = useContext(CartContext); // Get the context object
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -189,6 +191,7 @@ const Checkout: React.FC = () => {
         const subtotal = calculateSubTotal(); // Use the correctly defined function
         if (subtotal > 0) {
           try {
+            setVoucherLoading(true); // Set loading state to true
             // Call the API to get the best voucher suggestion
             const response = await voucherApi.getBestVoucher();
             if (response.data && response.data.voucher) {
@@ -229,6 +232,8 @@ const Checkout: React.FC = () => {
             // Reset selection on fetch/apply error
             setSelectedVoucher(null);
             setDiscount(0);
+          } finally {
+            setVoucherLoading(false); // Set loading state to false
           }
         } else {
           // Cart is empty or subtotal is zero, reset voucher state
@@ -259,6 +264,7 @@ const Checkout: React.FC = () => {
 
     // If user selects a specific voucher from the dropdown
     try {
+      setApplyingVoucher(true); // Set applying state to true
       const subtotal = calculateSubTotal();
       const response = await voucherApi.apply(voucher.id, {
         total_amount: subtotal,
@@ -282,6 +288,8 @@ const Checkout: React.FC = () => {
         setSelectedVoucher(null);
         setDiscount(0);
       }
+    } finally {
+      setApplyingVoucher(false); // Set applying state to false
     }
   };
 
@@ -533,10 +541,16 @@ const Checkout: React.FC = () => {
             <Box sx={{ mb: 2 }}>
               {/* Voucher selection - Added InputLabel */}
               <FormControl fullWidth variant="outlined">
-                <InputLabel id="voucher-select-label">Chọn Voucher</InputLabel>
+                <InputLabel id="voucher-select-label">
+                  {voucherLoading ? "Đang tìm voucher tốt nhất..." : 
+                   applyingVoucher ? "Đang áp dụng voucher..." : 
+                   "Chọn Voucher"}
+                </InputLabel>
                 <Select
                   labelId="voucher-select-label"
-                  label="Chọn Voucher" // Add label prop to associate with InputLabel
+                  label={voucherLoading ? "Đang tìm voucher tốt nhất..." : 
+                         applyingVoucher ? "Đang áp dụng voucher..." : 
+                         "Chọn Voucher"}
                   // Ensure value is number or empty string, matching MenuItem values
                   value={selectedVoucher ? selectedVoucher.id : ""}
                   onChange={(e: SelectChangeEvent<number | string>) => {
@@ -552,20 +566,19 @@ const Checkout: React.FC = () => {
                     handleVoucherSelect(selected);
                   }}
                   displayEmpty
-                // Removed renderValue prop to rely on default MenuItem display
+                  // Removed renderValue prop to rely on default MenuItem display
+                  disabled={voucherLoading || applyingVoucher} // Disable dropdown when loading or applying
+                  startAdornment={(voucherLoading || applyingVoucher) ? 
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, mr: 1 }}>
+                      <CircularProgress size={20} color="inherit" />
+                    </Box> : undefined
+                  }
                 >
-                  {selectedVoucher ? (
+                  {!voucherLoading && !applyingVoucher && (
                     <MenuItem value="">
-                      <em>sử dụng voucher</em>
-                    </MenuItem>
-                  ) : (
-                    <MenuItem value="">
-                      <em>Không sử dụng voucher</em>
+                      <em>không sử dụng voucher</em>
                     </MenuItem>
                   )}
-                  <MenuItem value="">
-                    <em></em>
-                  </MenuItem>
                   {vouchers.map((voucher) => (
                     <MenuItem key={voucher.id} value={voucher.id}>
                       {voucher.code} - Giảm{" "}
@@ -577,6 +590,12 @@ const Checkout: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
+                {voucherLoading && (
+                  <FormHelperText>Đang tìm voucher tốt nhất cho đơn hàng của bạn</FormHelperText>
+                )}
+                {applyingVoucher && (
+                  <FormHelperText>Đang áp dụng voucher...</FormHelperText>
+                )}
               </FormControl>
             </Box>
 
