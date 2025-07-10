@@ -25,6 +25,7 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import HistoryIcon from "@mui/icons-material/History";
+import CloseIcon from "@mui/icons-material/Close";
 import { debounce } from "lodash";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -57,6 +58,7 @@ const Header: React.FC = () => {
   const [cartAnchorEl, setCartAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<ProductDetailResponse[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated, logout } = useAuth();
   const cartContext = useContext(CartContext);
@@ -76,6 +78,7 @@ const Header: React.FC = () => {
   const fetchSuggestions = async (query: string) => {
     if (!query) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
@@ -112,10 +115,12 @@ const Header: React.FC = () => {
           };
         });
         setSuggestions(transformedSuggestions);
+        setShowSuggestions(true);
       }
     } catch (error) {
       console.error('Error fetching suggestions:', error);
       setSuggestions([]);
+      setShowSuggestions(false);
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +134,21 @@ const Header: React.FC = () => {
     return () => debouncedFetchSuggestions.cancel();
   }, [searchTerm]);
 
+  // Handle clicking outside to hide suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.search-container')) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleSearchClick = (suggestion: ProductDetailResponse) => {
     navigate(`/product/${suggestion.product_id}`, {
       state: {
@@ -139,6 +159,16 @@ const Header: React.FC = () => {
     });
     setSearchTerm('');
     setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const handleClearSuggestions = () => {
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const handleHideSuggestions = () => {
+    setShowSuggestions(false);
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -210,12 +240,17 @@ const Header: React.FC = () => {
         </Box>
 
         {/* Thanh tìm kiếm */}
-        <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', position: 'relative' }}>
+        <Box className="search-container" sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', position: 'relative' }}>
           <TextField
             size="small"
             placeholder="Tìm kiếm sản phẩm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => {
+              if (suggestions.length > 0) {
+                setShowSuggestions(true);
+              }
+            }}
             sx={{
               width: '50%',
               bgcolor: 'white',
@@ -241,15 +276,27 @@ const Header: React.FC = () => {
                   <SearchIcon color="action" />
                 </InputAdornment>
               ),
-              endAdornment: isLoading && (
+              endAdornment: (
                 <InputAdornment position="end">
-                  <CircularProgress size={20} />
+                  {isLoading && <CircularProgress size={20} />}
+                  {searchTerm && (
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  )}
                 </InputAdornment>
               )
             }}
           />
           {/* Gợi ý tìm kiếm */}
-          {suggestions.length > 0 && searchTerm && (
+          {showSuggestions && suggestions.length > 0 && searchTerm && (
             <Paper
               sx={{
                 position: 'absolute',
@@ -262,6 +309,14 @@ const Header: React.FC = () => {
                 overflow: 'auto'
               }}
             >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, borderBottom: 1, borderColor: 'divider' }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Gợi ý tìm kiếm
+                </Typography>
+                <IconButton size="small" onClick={handleHideSuggestions}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
               <List>
                 {suggestions.map((suggestion) => (
                   <ListItem
