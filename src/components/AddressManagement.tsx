@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from "react"; // Fix TS error: allowSyntheticDefaultImports
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -20,6 +21,7 @@ import {
   ListItemSecondaryAction,
   Chip,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -47,13 +49,23 @@ const AddressManagement: React.FC<AddressManagementProps> = ({ userId }) => {
     is_default: 0
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  
+  // GHN Location states
+  const [ghnProvinces, setGhnProvinces] = useState<any[]>([]);
+  const [ghnDistricts, setGhnDistricts] = useState<any[]>([]);
+  const [ghnWards, setGhnWards] = useState<any[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+
+  // Old API states (keeping for compatibility)
   const [cities, setCities] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
   const [wards, setWards] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAddresses();
-    fetchCities();
+    fetchGHNProvinces();
   }, []);
 
   const fetchAddresses = async () => {
@@ -70,6 +82,47 @@ const AddressManagement: React.FC<AddressManagementProps> = ({ userId }) => {
     }
   };
 
+  const fetchGHNProvinces = async () => {
+    try {
+      setLoadingProvinces(true);
+      const response = await authenticationApiService.getGHNProvinces();
+      setGhnProvinces(response.data);
+    } catch (error) {
+      console.error("Error fetching provinces:", error);
+      toast.error("Không thể tải danh sách tỉnh/thành phố");
+    } finally {
+      setLoadingProvinces(false);
+    }
+  };
+
+  const fetchGHNDistricts = async (provinceId: number) => {
+    try {
+      setLoadingDistricts(true);
+      const response = await authenticationApiService.getGHNDistricts(provinceId);
+      setGhnDistricts(response.data);
+      setGhnWards([]); // Reset wards when province changes
+    } catch (error) {
+      console.error("Error fetching districts:", error);
+      toast.error("Không thể tải danh sách quận/huyện");
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
+
+  const fetchGHNWards = async (districtId: number) => {
+    try {
+      setLoadingWards(true);
+      const response = await authenticationApiService.getGHNWards(districtId);
+      setGhnWards(response.data);
+    } catch (error) {
+      console.error("Error fetching wards:", error);
+      toast.error("Không thể tải danh sách phường/xã");
+    } finally {
+      setLoadingWards(false);
+    }
+  };
+
+  // Old API functions (keeping for compatibility)
   const fetchCities = async () => {
     try {
       const response = await authenticationApiService.getAllCity();
@@ -113,8 +166,9 @@ const AddressManagement: React.FC<AddressManagementProps> = ({ userId }) => {
         full_address: address.full_address,
         is_default: address.is_default
       });
-      fetchDistricts(address.city_id);
-      fetchWards(address.district_id);
+      // Fetch GHN districts and wards for the address
+      fetchGHNDistricts(address.city_id);
+      fetchGHNWards(address.district_id);
     } else {
       setEditingAddress(null);
       setFormData({
@@ -155,33 +209,33 @@ const AddressManagement: React.FC<AddressManagementProps> = ({ userId }) => {
     const { name, value } = e.target;
     
     if (name === 'city_id' && value) {
-      const selectedCity = cities.find(city => city.id === value);
+      const selectedCity = ghnProvinces.find(city => city.ProvinceID === value);
       setFormData(prev => ({
         ...prev,
         city_id: Number(value),
-        city_name: selectedCity?.name || '',
+        city_name: selectedCity?.ProvinceName || '',
         district_id: 0,
         district_name: '',
         ward_id: 0,
         ward_name: ''
       }));
-      fetchDistricts(Number(value));
+      fetchGHNDistricts(Number(value));
     } else if (name === 'district_id' && value) {
-      const selectedDistrict = districts.find(district => district.id === value);
+      const selectedDistrict = ghnDistricts.find(district => district.DistrictID === value);
       setFormData(prev => ({
         ...prev,
         district_id: Number(value),
-        district_name: selectedDistrict?.name || '',
+        district_name: selectedDistrict?.DistrictName || '',
         ward_id: 0,
         ward_name: ''
       }));
-      fetchWards(Number(value));
+      fetchGHNWards(Number(value));
     } else if (name === 'ward_id' && value) {
-      const selectedWard = wards.find(ward => ward.id === value);
+      const selectedWard = ghnWards.find(ward => ward.WardCode === value);
       setFormData(prev => ({
         ...prev,
         ward_id: Number(value),
-        ward_name: selectedWard?.name || ''
+        ward_name: selectedWard?.WardName || ''
       }));
     } else {
       setFormData(prev => ({
@@ -356,10 +410,14 @@ const AddressManagement: React.FC<AddressManagementProps> = ({ userId }) => {
                 value={formData.city_id}
                 onChange={handleChange}
                 label="Tỉnh/Thành phố"
+                disabled={loadingProvinces}
               >
-                {cities.map((city) => (
-                  <MenuItem key={city.id} value={city.id}>
-                    {city.name}
+                <MenuItem value="">
+                  <em>Chọn tỉnh/thành phố</em>
+                </MenuItem>
+                {ghnProvinces.map((province) => (
+                  <MenuItem key={province.ProvinceID} value={province.ProvinceID}>
+                    {province.ProvinceName}
                   </MenuItem>
                 ))}
               </Select>
@@ -373,10 +431,14 @@ const AddressManagement: React.FC<AddressManagementProps> = ({ userId }) => {
                 value={formData.district_id}
                 onChange={handleChange}
                 label="Quận/Huyện"
+                disabled={!formData.city_id || loadingDistricts}
               >
-                {districts.map((district) => (
-                  <MenuItem key={district.id} value={district.id}>
-                    {district.name}
+                <MenuItem value="">
+                  <em>Chọn quận/huyện</em>
+                </MenuItem>
+                {ghnDistricts.map((district) => (
+                  <MenuItem key={district.DistrictID} value={district.DistrictID}>
+                    {district.DistrictName}
                   </MenuItem>
                 ))}
               </Select>
@@ -390,10 +452,14 @@ const AddressManagement: React.FC<AddressManagementProps> = ({ userId }) => {
                 value={formData.ward_id}
                 onChange={handleChange}
                 label="Phường/Xã"
+                disabled={!formData.district_id || loadingWards}
               >
-                {wards.map((ward) => (
-                  <MenuItem key={ward.id} value={ward.id}>
-                    {ward.name}
+                <MenuItem value="">
+                  <em>Chọn phường/xã</em>
+                </MenuItem>
+                {ghnWards.map((ward) => (
+                  <MenuItem key={ward.WardCode} value={ward.WardCode}>
+                    {ward.WardName}
                   </MenuItem>
                 ))}
               </Select>

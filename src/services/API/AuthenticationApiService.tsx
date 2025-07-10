@@ -129,6 +129,70 @@ interface ProductDetailResponse {
   updated_at: Date;
 }
 
+// GHN Service interfaces
+interface GHNServiceResponse {
+  service_id: number;
+  short_name: string;
+  service_type_id: number;
+}
+
+interface GHNServiceRequest {
+  shop_id: number;
+  from_district: number;
+  to_district: number;
+}
+
+// GHN Fee interfaces
+interface GHNFeeResponse {
+  total: number;
+  service_fee: number;
+  insurance_fee: number;
+  pick_station_fee: number;
+  coupon_value: number;
+  r2s_fee: number;
+  document_return: number;
+  double_check: number;
+  cod_fee: number;
+  pick_remote_areas_fee: number;
+  deliver_remote_areas_fee: number;
+  cod_failed_fee: number;
+}
+
+interface GHNFeeRequest {
+  service_id: number;
+  insurance_value: number;
+  from_district_id: number;
+  to_district_id: number;
+  from_ward_code: string;
+  to_ward_code: string;
+  height?: number;
+  length?: number;
+  weight?: number;
+  width?: number;
+}
+
+// GHN Location interfaces
+interface GHNProvinceResponse {
+  ProvinceID: number;
+  ProvinceName: string;
+  Code: string;
+}
+
+interface GHNDistrictResponse {
+  DistrictID: number;
+  ProvinceID: number;
+  DistrictName: string;
+  Code: string;
+  Type: number;
+  SupportType: number;
+}
+
+interface GHNWardResponse {
+  WardCode: string;
+  DistrictID: number;
+  WardName: string;
+}
+
 class AuthenticationApiService extends BaseApiService {
   public async Login(user_name: any, password: any): Promise<any> {
     try {
@@ -590,6 +654,69 @@ class AuthenticationApiService extends BaseApiService {
           keyword,
           page,
           limit
+        }
+      });
+      handleResponseApi.handleResponse(response);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get available GHN services
+  async getAvailableServices(request: GHNServiceRequest): Promise<ApiResponse<GHNServiceResponse[]>> {
+    try {
+      const response = await this.api.post(`/${prefix}/ghn/available-services`, request);
+      handleResponseApi.handleResponse(response);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Calculate GHN shipping fee
+  async calculateShippingFee(request: GHNFeeRequest): Promise<ApiResponse<GHNFeeResponse>> {
+    try {
+      const response = await this.api.post(`/${prefix}/ghn/calculate-fee`, request);
+      handleResponseApi.handleResponse(response);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get GHN provinces
+  async getGHNProvinces(): Promise<ApiResponse<GHNProvinceResponse[]>> {
+    try {
+      const response = await this.api.get(`/${prefix}/ghn/provinces`);
+      handleResponseApi.handleResponse(response);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get GHN districts by province ID
+  async getGHNDistricts(provinceId: number): Promise<ApiResponse<GHNDistrictResponse[]>> {
+    try {
+      const response = await this.api.get(`/${prefix}/ghn/districts`, {
+        params: {
+          province_id: provinceId
+        }
+      });
+      handleResponseApi.handleResponse(response);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
+  }
+
+  // Get GHN wards by district ID
+  async getGHNWards(districtId: number): Promise<ApiResponse<GHNWardResponse[]>> {
+    try {
+      const response = await this.api.get(`/${prefix}/ghn/wards`, {
+        params: {
+          district_id: districtId
         }
       });
       handleResponseApi.handleResponse(response);

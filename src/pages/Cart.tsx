@@ -1,4 +1,5 @@
-import React, { useContext, useState, useEffect } from "react";
+import * as React from "react";
+import { useContext, useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -17,9 +18,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  CircularProgress
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  Alert
 } from "@mui/material";
-import { Add, Remove, Delete } from "@mui/icons-material";
+import { Add, Remove, Delete, LocalShipping } from "@mui/icons-material";
 import { useNavigate, Link } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -40,6 +47,22 @@ const Cart: React.FC = () => {
   const [relatedProducts, setRelatedProducts] = useState<ProductDetail[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
 
+  // GHN Shipping states
+  const [ghnProvinces, setGhnProvinces] = useState<any[]>([]);
+  const [ghnDistricts, setGhnDistricts] = useState<any[]>([]);
+  const [ghnWards, setGhnWards] = useState<any[]>([]);
+  const [ghnServices, setGhnServices] = useState<any[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState<number | ''>('');
+  const [selectedDistrict, setSelectedDistrict] = useState<number | ''>('');
+  const [selectedWard, setSelectedWard] = useState<string | ''>('');
+  const [selectedService, setSelectedService] = useState<number | ''>('');
+  const [shippingFee, setShippingFee] = useState<number>(0);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated) {
       // Nếu đã đăng nhập, sử dụng dữ liệu từ CartContext
@@ -57,6 +80,149 @@ const Cart: React.FC = () => {
     }
   }, [isAuthenticated, cartContext]);
 
+  // Fetch GHN provinces on component mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        setLoadingProvinces(true);
+        const response = await authenticationApiService.getGHNProvinces();
+        setGhnProvinces(response.data);
+      } catch (error) {
+        console.error("Error fetching provinces:", error);
+        toast.error("Không thể tải danh sách tỉnh/thành phố");
+      } finally {
+        setLoadingProvinces(false);
+      }
+    };
+
+    fetchProvinces();
+  }, []);
+
+  // Fetch districts when province changes
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      if (selectedProvince) {
+        try {
+          setLoadingDistricts(true);
+          setSelectedDistrict('');
+          setSelectedWard('');
+          setSelectedService('');
+          setShippingFee(0);
+          setGhnWards([]);
+          setGhnServices([]);
+          
+          const response = await authenticationApiService.getGHNDistricts(selectedProvince);
+          setGhnDistricts(response.data);
+        } catch (error) {
+          console.error("Error fetching districts:", error);
+          toast.error("Không thể tải danh sách quận/huyện");
+        } finally {
+          setLoadingDistricts(false);
+        }
+      } else {
+        setGhnDistricts([]);
+      }
+    };
+
+    fetchDistricts();
+  }, [selectedProvince]);
+
+  // Fetch wards when district changes
+  useEffect(() => {
+    const fetchWards = async () => {
+      if (selectedDistrict) {
+        try {
+          setLoadingWards(true);
+          setSelectedWard('');
+          setSelectedService('');
+          setShippingFee(0);
+          setGhnServices([]);
+          
+          const response = await authenticationApiService.getGHNWards(selectedDistrict);
+          setGhnWards(response.data);
+        } catch (error) {
+          console.error("Error fetching wards:", error);
+          toast.error("Không thể tải danh sách phường/xã");
+        } finally {
+          setLoadingWards(false);
+        }
+      } else {
+        setGhnWards([]);
+      }
+    };
+
+    fetchWards();
+  }, [selectedDistrict]);
+
+  // Fetch services when ward changes
+  useEffect(() => {
+    const fetchServices = async () => {
+      if (selectedWard && selectedDistrict) {
+        try {
+          setLoadingServices(true);
+          setSelectedService('');
+          setShippingFee(0);
+          
+          // Assuming shop_id is 1 for now - you might need to get this from your app config
+          const request = {
+            shop_id: 197014,
+            from_district: 1454, // Default from district (you might want to make this configurable)
+            to_district: selectedDistrict
+          };
+          
+          const response = await authenticationApiService.getAvailableServices(request);
+          setGhnServices(response.data);
+        } catch (error) {
+          console.error("Error fetching services:", error);
+          toast.error("Không thể tải danh sách dịch vụ vận chuyển");
+        } finally {
+          setLoadingServices(false);
+        }
+      } else {
+        setGhnServices([]);
+      }
+    };
+
+    fetchServices();
+  }, [selectedWard, selectedDistrict]);
+
+  // Calculate shipping fee when service changes
+  useEffect(() => {
+    const calculateFee = async () => {
+      if (selectedService && selectedWard && selectedDistrict && cartItems.length > 0) {
+        try {
+          setLoadingShipping(true);
+          
+          const totalValue = cartItems.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
+          
+          const request = {
+            service_id: selectedService,
+            insurance_value: totalValue,
+            from_district_id: 1454, // Default from district
+            to_district_id: selectedDistrict,
+            from_ward_code: "20109", // Default from ward code
+            to_ward_code: selectedWard,
+            weight: 500, // Default weight in grams
+            length: 20, // Default dimensions in cm
+            width: 20,
+            height: 10
+          };
+          
+          const response = await authenticationApiService.calculateShippingFee(request);
+          setShippingFee(response.data.total);
+        } catch (error) {
+          console.error("Error calculating shipping fee:", error);
+          toast.error("Không thể tính phí vận chuyển");
+          setShippingFee(0);
+        } finally {
+          setLoadingShipping(false);
+        }
+      }
+    };
+
+    calculateFee();
+  }, [selectedService, selectedWard, selectedDistrict, cartItems]);
+
   // Fetch related products when cart items change
   useEffect(() => {
     const fetchRelatedProducts = async () => {
@@ -64,8 +230,9 @@ const Cart: React.FC = () => {
         try {
           setLoadingRelated(true);
           const firstItem = cartItems[0];
+          // Use product_id instead of category_id since it's not available in CartDetail
           const response = await authenticationApiService.getProductDetails({
-            category_id: firstItem.product_detail.category_id,
+            product_id: firstItem.product_detail.product_id,
             status: 1,
             limit: 4,
             page: 1
@@ -160,7 +327,6 @@ const Cart: React.FC = () => {
   };
 
   const totalPrice = cartItems.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
-  const shippingFee = totalPrice >= 1000000 ? 50000 : 30000; // 50,000 for orders >= 1 million, 30,000 for others
   const finalTotal = totalPrice + shippingFee;
 
   const handleCheckout = () => {
@@ -240,6 +406,129 @@ const Cart: React.FC = () => {
               ))}
             </Grid>
           </Grid>
+
+          {/* Shipping Section */}
+          <Box sx={{ mt: 4 }}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <LocalShipping /> Tính phí vận chuyển
+              </Typography>
+              
+              <Grid container spacing={2}>
+                {/* Province Selection */}
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>Tỉnh/Thành phố</InputLabel>
+                    <Select
+                      value={selectedProvince}
+                      onChange={(e) => setSelectedProvince(e.target.value as number)}
+                      label="Tỉnh/Thành phố"
+                      disabled={loadingProvinces}
+                    >
+                      <MenuItem value="">
+                        <em>Chọn tỉnh/thành phố</em>
+                      </MenuItem>
+                      {ghnProvinces.map((province) => (
+                        <MenuItem key={province.ProvinceID} value={province.ProvinceID}>
+                          {province.ProvinceName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {loadingProvinces && <FormHelperText>Đang tải...</FormHelperText>}
+                  </FormControl>
+                </Grid>
+
+                {/* District Selection */}
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>Quận/Huyện</InputLabel>
+                    <Select
+                      value={selectedDistrict}
+                      onChange={(e) => setSelectedDistrict(e.target.value as number)}
+                      label="Quận/Huyện"
+                      disabled={!selectedProvince || loadingDistricts}
+                    >
+                      <MenuItem value="">
+                        <em>Chọn quận/huyện</em>
+                      </MenuItem>
+                      {ghnDistricts.map((district) => (
+                        <MenuItem key={district.DistrictID} value={district.DistrictID}>
+                          {district.DistrictName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {loadingDistricts && <FormHelperText>Đang tải...</FormHelperText>}
+                  </FormControl>
+                </Grid>
+
+                {/* Ward Selection */}
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>Phường/Xã</InputLabel>
+                    <Select
+                      value={selectedWard}
+                      onChange={(e) => setSelectedWard(e.target.value as string)}
+                      label="Phường/Xã"
+                      disabled={!selectedDistrict || loadingWards}
+                    >
+                      <MenuItem value="">
+                        <em>Chọn phường/xã</em>
+                      </MenuItem>
+                      {ghnWards.map((ward) => (
+                        <MenuItem key={ward.WardCode} value={ward.WardCode}>
+                          {ward.WardName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {loadingWards && <FormHelperText>Đang tải...</FormHelperText>}
+                  </FormControl>
+                </Grid>
+
+                {/* Service Selection */}
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Dịch vụ vận chuyển</InputLabel>
+                    <Select
+                      value={selectedService}
+                      onChange={(e) => setSelectedService(e.target.value as number)}
+                      label="Dịch vụ vận chuyển"
+                      disabled={!selectedWard || loadingServices}
+                    >
+                      <MenuItem value="">
+                        <em>Chọn dịch vụ vận chuyển</em>
+                      </MenuItem>
+                      {Array.isArray(ghnServices) && ghnServices.length > 0 ? (
+                        ghnServices.map((service) => (
+                          <MenuItem key={service.service_id} value={service.service_id}>
+                            {service.short_name}
+                          </MenuItem>
+                        ))
+                      ) : (
+                        <MenuItem value="" disabled>
+                          <em>Không có dịch vụ vận chuyển</em>
+                        </MenuItem>
+                      )}
+                    </Select>
+                    {loadingServices && <FormHelperText>Đang tải...</FormHelperText>}
+                  </FormControl>
+                </Grid>
+              </Grid>
+
+              {/* Shipping Fee Display */}
+              {loadingShipping && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                  <CircularProgress size={20} />
+                  <Typography>Đang tính phí vận chuyển...</Typography>
+                </Box>
+              )}
+              
+              {shippingFee > 0 && !loadingShipping && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Phí vận chuyển: {formatCurrency(shippingFee)}
+                </Alert>
+              )}
+            </Paper>
+          </Box>
 
           {/* Summary Column */}
           <Box sx={{ mt: 4 }}>

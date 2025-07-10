@@ -29,6 +29,7 @@ import {
   DialogContentText,
   DialogActions, // Import SelectChangeEvent
   CircularProgress,
+  Alert,
 } from "@mui/material";
 // Import Voucher and ApplyVoucherResponse, assume CartItem is exported from CartContext
 import { CartContext, CartItem } from "../context/CartContext";
@@ -89,10 +90,22 @@ const Checkout: React.FC = () => {
       console.error("resetCart function not available in CartContext");
     });
 
-  // States for location selection
-  const [cities, setCities] = useState<any[]>([]);
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [wards, setWards] = useState<any[]>([]);
+  // GHN Location states
+  const [ghnProvinces, setGhnProvinces] = useState<any[]>([]);
+  const [ghnDistricts, setGhnDistricts] = useState<any[]>([]);
+  const [ghnWards, setGhnWards] = useState<any[]>([]);
+  const [ghnServices, setGhnServices] = useState<any[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState<number | ''>('');
+  const [selectedDistrict, setSelectedDistrict] = useState<number | ''>('');
+  const [selectedWard, setSelectedWard] = useState<string | ''>('');
+  const [selectedService, setSelectedService] = useState<number | ''>('');
+  const [shippingFee, setShippingFee] = useState<number>(0);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(false);
+
 
   // Define calculateSubTotal function correctly here
   const calculateSubTotal = (): number => {
@@ -102,42 +115,148 @@ const Checkout: React.FC = () => {
     }, 0);
   };
 
-  // Fetch cities on component mount
+  // Fetch GHN provinces on component mount
   useEffect(() => {
-    fetchCities();
+    const fetchProvinces = async () => {
+      try {
+        setLoadingProvinces(true);
+        const response = await authenticationApiService.getGHNProvinces();
+        setGhnProvinces(response.data);
+      } catch (error) {
+        console.error("Error fetching provinces:", error);
+        toast.error("Không thể tải danh sách tỉnh/thành phố");
+      } finally {
+        setLoadingProvinces(false);
+      }
+    };
+
+    fetchProvinces();
   }, []);
 
-  const fetchCities = async () => {
-    try {
-      const response = await authenticationApiService.getAllCity();
-      setCities(response.data);
-    } catch (error: any) {
-      toast.error("Không thể tải danh sách tỉnh/thành phố");
-    }
-  };
+  // Fetch GHN districts when province changes
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      if (selectedProvince) {
+        try {
+          setLoadingDistricts(true);
+          setSelectedDistrict('');
+          setSelectedWard('');
+          setSelectedService('');
+          setShippingFee(0);
+          setGhnWards([]);
+          setGhnServices([]);
+          
+          const response = await authenticationApiService.getGHNDistricts(selectedProvince);
+          setGhnDistricts(response.data);
+        } catch (error) {
+          console.error("Error fetching districts:", error);
+          toast.error("Không thể tải danh sách quận/huyện");
+        } finally {
+          setLoadingDistricts(false);
+        }
+      } else {
+        setGhnDistricts([]);
+      }
+    };
 
-  const fetchDistricts = async (cityId: number) => {
-    try {
-      const response = await authenticationApiService.findDistrictByCityId(
-        cityId
-      );
-      setDistricts(response.data);
-      setWards([]); // Reset wards when city changes
-    } catch (error: any) {
-      toast.error("Không thể tải danh sách quận/huyện");
-    }
-  };
+    fetchDistricts();
+  }, [selectedProvince]);
 
-  const fetchWards = async (districtId: number) => {
-    try {
-      const response = await authenticationApiService.findWardByDistrictId(
-        districtId
-      );
-      setWards(response.data);
-    } catch (error: any) {
-      toast.error("Không thể tải danh sách phường/xã");
-    }
-  };
+  // Fetch GHN wards when district changes
+  useEffect(() => {
+    const fetchWards = async () => {
+      if (selectedDistrict) {
+        try {
+          setLoadingWards(true);
+          setSelectedWard('');
+          setSelectedService('');
+          setShippingFee(0);
+          setGhnServices([]);
+          
+          const response = await authenticationApiService.getGHNWards(selectedDistrict);
+          setGhnWards(response.data);
+        } catch (error) {
+          console.error("Error fetching wards:", error);
+          toast.error("Không thể tải danh sách phường/xã");
+        } finally {
+          setLoadingWards(false);
+        }
+      } else {
+        setGhnWards([]);
+      }
+    };
+
+    fetchWards();
+  }, [selectedDistrict]);
+
+  // Fetch GHN services when ward changes
+  useEffect(() => {
+    const fetchServices = async () => {
+      if (selectedWard && selectedDistrict) {
+        try {
+          setLoadingServices(true);
+          setSelectedService('');
+          setShippingFee(0);
+          
+          // Assuming shop_id is 1 for now - you might need to get this from your app config
+          const request = {
+            shop_id: 197014,
+            from_district: 1454, // Default from district (you might want to make this configurable)
+            to_district: selectedDistrict
+          };
+          
+          const response = await authenticationApiService.getAvailableServices(request);
+          setGhnServices(response.data);
+        } catch (error) {
+          console.error("Error fetching services:", error);
+          toast.error("Không thể tải danh sách dịch vụ vận chuyển");
+        } finally {
+          setLoadingServices(false);
+        }
+      } else {
+        setGhnServices([]);
+      }
+    };
+
+    fetchServices();
+  }, [selectedWard, selectedDistrict]);
+
+  // Calculate shipping fee when service changes
+  useEffect(() => {
+    const calculateFee = async () => {
+      if (selectedService && cart.length > 0) {
+        try {
+          setLoadingShipping(true);
+          
+          const totalValue = cart.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
+          
+          const request = {
+            service_id: selectedService,
+            insurance_value: totalValue,
+            from_district_id: 1454, // Default from district
+            to_district_id: selectedDistrict as number, // Ensure it's a number
+            from_ward_code: "20109", // Default from ward code
+            to_ward_code: selectedWard,
+            weight: 500, // Default weight in grams
+            length: 20, // Default dimensions in cm
+            width: 20,
+            height: 10
+          };
+          
+          const response = await authenticationApiService.calculateShippingFee(request);
+          setShippingFee(response.data.total);
+        } catch (error) {
+          console.error("Error calculating shipping fee:", error);
+          toast.error("Không thể tính phí vận chuyển");
+          setShippingFee(0);
+        } finally {
+          setLoadingShipping(false);
+        }
+      }
+    };
+
+    calculateFee();
+  }, [selectedService, cart]);
 
   // Fetch addresses
   useEffect(() => {
@@ -156,6 +275,28 @@ const Checkout: React.FC = () => {
         );
         if (defaultAddress) {
           setSelectedAddress(defaultAddress);
+          // Set selectedDistrict và selectedWard từ địa chỉ mặc định
+          setSelectedDistrict(defaultAddress.district_id);
+          setSelectedWard(defaultAddress.ward_id?.toString() || "");
+          // (Có thể set luôn selectedProvince nếu cần)
+          setSelectedProvince(defaultAddress.city_id);
+          // Auto-fetch available services cho địa chỉ mặc định
+          // if (defaultAddress.district_id) {
+          //   try {
+          //     setLoadingServices(true);
+          //     const request = {
+          //       shop_id: 197014,
+          //       from_district: 1454,
+          //       to_district: defaultAddress.district_id
+          //     };
+          //     const servicesResponse = await authenticationApiService.getAvailableServices(request);
+          //     setGhnServices(servicesResponse.data);
+          //   } catch (error) {
+          //     console.error("Error fetching services for default address:", error);
+          //   } finally {
+          //     setLoadingServices(false);
+          //   }
+          // }
         }
       } catch (error) {
         console.error("Error fetching addresses:", error);
@@ -295,22 +436,22 @@ const Checkout: React.FC = () => {
 
   const calculateTotal = () => {
     const subtotal = calculateSubTotal();
-    // Ensure shipping is calculated based on subtotal *before* discount
-    const shippingCost = calculateShipping(subtotal);
-    return subtotal - discount + shippingCost;
+    // Only use GHN shipping fee, no fallback to hardcoded values
+    return subtotal - discount + shippingFee;
   };
 
-  const calculateShipping = (subtotal: number) => {
-    // Calculate shipping cost based on the subtotal
-    // Example logic: Free ship over 1,000,000, else 30,000
-    // return subtotal >= 1000000 ? 0 : 30000;
-    // Current logic from original code:
-    if (subtotal >= 1000000) {
-      return 50000; // 50,000 VND for orders above 1 million
-    } else {
-      return 30000; // 30,000 VND for orders below 1 million
-    }
-  };
+  // Remove the calculateShipping function as we no longer use hardcoded values
+  // const calculateShipping = (subtotal: number) => {
+  //   // Calculate shipping cost based on the subtotal
+  //   // Example logic: Free ship over 1,000,000, else 30,000
+  //   // return subtotal >= 1000000 ? 0 : 30000;
+  //   // Current logic from original code:
+  //   if (subtotal >= 1000000) {
+  //     return 50000; // 50,000 VND for orders above 1 million
+  //   } else {
+  //     return 30000; // 30,000 VND for orders below 1 million
+  //   }
+  // };
 
   // Combined handler for both TextField and Select changes
   const handleAddressChange = (
@@ -329,38 +470,42 @@ const Checkout: React.FC = () => {
 
     if (name === "city_id" && value) {
       const cityId = Number(value);
-      const selectedCity = cities.find((city) => city.id === cityId);
+      const selectedCity = ghnProvinces.find((city) => city.ProvinceID === cityId);
       setNewAddress((prev) => ({
         ...prev,
         city_id: cityId,
-        city_name: selectedCity?.name || "",
+        city_name: selectedCity?.ProvinceName || "",
         district_id: 0, // Reset district and ward
         district_name: "",
         ward_id: 0,
         ward_name: "",
       }));
-      fetchDistricts(cityId);
+      // Update GHN province selection
+      setSelectedProvince(cityId);
     } else if (name === "district_id" && value) {
       const districtId = Number(value);
-      const selectedDistrict = districts.find(
-        (district) => district.id === districtId
+      const selectedDistrict = ghnDistricts.find(
+        (district) => district.DistrictID === districtId
       );
       setNewAddress((prev) => ({
         ...prev,
         district_id: districtId,
-        district_name: selectedDistrict?.name || "",
+        district_name: selectedDistrict?.DistrictName || "",
         ward_id: 0, // Reset ward
         ward_name: "",
       }));
-      fetchWards(districtId);
+      // Update GHN district selection
+      setSelectedDistrict(districtId);
     } else if (name === "ward_id" && value) {
       const wardId = Number(value);
-      const selectedWard = wards.find((ward) => ward.id === wardId);
+      const selectedWard = ghnWards.find((ward) => ward.WardCode === value);
       setNewAddress((prev) => ({
         ...prev,
         ward_id: wardId,
-        ward_name: selectedWard?.name || "",
+        ward_name: selectedWard?.WardName || "",
       }));
+      // Update GHN ward selection
+      setSelectedWard(value as string);
     } else {
       // Handle other fields like full_name, phone, full_address
       setNewAddress((prev) => ({
@@ -397,9 +542,67 @@ const Checkout: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // Handle save new address
+  const handleSaveNewAddress = async () => {
+    if (!validateAddress()) {
+      toast.warn("Vui lòng kiểm tra lại thông tin địa chỉ mới.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Create new address
+      const addressResponse = await addressBookApi.create(newAddress);
+      const createdAddress = addressResponse.data;
+      
+      // Add the full address object returned by the API to the list
+      setAddresses((prev) => [...prev, createdAddress]);
+      // Select the newly created address
+      setSelectedAddress(createdAddress);
+      setUseNewAddress(false); // Switch back to existing address view
+      toast.success("Đã thêm địa chỉ mới thành công.");
+      
+      // Reset form
+      setNewAddress({
+        full_name: "",
+        phone: "",
+        ward_id: 0,
+        ward_name: "",
+        district_id: 0,
+        district_name: "",
+        city_id: 0,
+        city_name: "",
+        full_address: "",
+        is_default: 0,
+      });
+      setSelectedProvince(createdAddress.city_id);
+      setSelectedDistrict(createdAddress.district_id);
+      setSelectedWard(`${createdAddress.ward_id}`);
+      setSelectedService('');
+      setShippingFee(0);
+      
+    } catch (error: any) {
+      console.error("Error creating address:", error);
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Đã có lỗi xảy ra khi tạo địa chỉ!"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      // Validate shipping fee is calculated
+      if (shippingFee === 0) {
+        toast.error("Vui lòng chọn dịch vụ vận chuyển và tính phí ship trước khi đặt hàng.");
+        setLoading(false);
+        return;
+      }
+
       let addressId: number | null = null; // Initialize as null
 
       if (useNewAddress) {
@@ -436,7 +639,7 @@ const Checkout: React.FC = () => {
       const orderRequest = {
         price: calculateSubTotal(),
         discount_amount: discount,
-        amount_shipping: calculateShipping(calculateSubTotal()),
+        amount_shipping: shippingFee, // Use the calculated shipping fee
         total_price: calculateTotal(),
         payment_method: paymentMethod === "cod" ? 1 : 2, // 1 for COD, 2 for online payment
         address_id: addressId, // Use the determined addressId
@@ -633,7 +836,7 @@ const Checkout: React.FC = () => {
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body1" align="right">
-                    {calculateShipping(calculateSubTotal()).toLocaleString()} đ
+                    {shippingFee > 0 ? shippingFee.toLocaleString() : "Chưa tính"} đ
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
@@ -695,13 +898,41 @@ const Checkout: React.FC = () => {
                   labelId="select-address-label"
                   label="Địa chỉ đã lưu"
                   value={selectedAddress?.id || ""}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const selectedId = e.target.value;
                     const selected =
                       addresses.find(
                         (addr) => addr.id === Number(selectedId)
                       ) || null;
                     setSelectedAddress(selected);
+                    
+                    // Auto-fetch available services for selected address
+                    if (selected && selected.district_id) {
+                      try {
+                        setLoadingServices(true);
+                        setSelectedWard(`${selected.ward_id}`);
+                        setSelectedDistrict(selected.district_id);
+                        setSelectedService('');
+                        setShippingFee(0);
+                        
+                        const request = {
+                          shop_id: 197014,
+                          from_district: 1454,
+                          to_district: selected.district_id
+                        };
+                        const servicesResponse = await authenticationApiService.getAvailableServices(request);
+                        setGhnServices(servicesResponse.data);
+                      } catch (error) {
+                        console.error("Error fetching services for selected address:", error);
+                        toast.error("Không thể tải danh sách dịch vụ vận chuyển");
+                      } finally {
+                        setLoadingServices(false);
+                      }
+                    } else {
+                      setGhnServices([]);
+                      setSelectedService('');
+                      setShippingFee(0);
+                    }
                   }}
                   displayEmpty={addresses.length === 0}
                   disabled={addresses.length === 0}
@@ -767,13 +998,14 @@ const Checkout: React.FC = () => {
                     value={newAddress.city_id || ""} // Handle 0 case
                     onChange={handleAddressChange}
                     label="Tỉnh/Thành phố"
+                    disabled={loadingProvinces}
                   >
                     <MenuItem value="" disabled>
                       <em>Chọn Tỉnh/Thành phố</em>
                     </MenuItem>
-                    {cities.map((city) => (
-                      <MenuItem key={city.id} value={city.id}>
-                        {city.name}
+                    {ghnProvinces.map((province) => (
+                      <MenuItem key={province.ProvinceID} value={province.ProvinceID}>
+                        {province.ProvinceName}
                       </MenuItem>
                     ))}
                   </Select>
@@ -791,14 +1023,14 @@ const Checkout: React.FC = () => {
                     value={newAddress.district_id || ""} // Handle 0 case
                     onChange={handleAddressChange}
                     label="Quận/Huyện"
-                    disabled={!newAddress.city_id} // Disable if no city selected
+                    disabled={!newAddress.city_id || loadingDistricts} // Disable if no city selected
                   >
                     <MenuItem value="" disabled>
                       <em>Chọn Quận/Huyện</em>
                     </MenuItem>
-                    {districts.map((district) => (
-                      <MenuItem key={district.id} value={district.id}>
-                        {district.name}
+                    {ghnDistricts.map((district) => (
+                      <MenuItem key={district.DistrictID} value={district.DistrictID}>
+                        {district.DistrictName}
                       </MenuItem>
                     ))}
                   </Select>
@@ -816,14 +1048,14 @@ const Checkout: React.FC = () => {
                     value={newAddress.ward_id || ""} // Handle 0 case
                     onChange={handleAddressChange}
                     label="Phường/Xã"
-                    disabled={!newAddress.district_id} // Disable if no district selected
+                    disabled={!newAddress.district_id || loadingWards} // Disable if no district selected
                   >
                     <MenuItem value="" disabled>
                       <em>Chọn Phường/Xã</em>
                     </MenuItem>
-                    {wards.map((ward) => (
-                      <MenuItem key={ward.id} value={ward.id}>
-                        {ward.name}
+                    {ghnWards.map((ward) => (
+                      <MenuItem key={ward.WardCode} value={ward.WardCode}>
+                        {ward.WardName}
                       </MenuItem>
                     ))}
                   </Select>
@@ -840,10 +1072,86 @@ const Checkout: React.FC = () => {
                   helperText={addressErrors.full_address}
                   margin="dense" // Use dense margin
                 />
-                {/* Button to save new address - removed as it's saved on submit */}
+                
+                {/* Button to save new address */}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  onClick={handleSaveNewAddress}
+                  disabled={loading}
+                  sx={{ mt: 2 }}
+                >
+                  {loading ? <CircularProgress size={24} color="inherit" /> : "Lưu địa chỉ mới"}
+                </Button>
               </Box>
             )}
           </Paper>
+
+          {/* Shipping Services Section */}
+          {(selectedAddress || (useNewAddress && selectedWard && selectedDistrict)) && (
+            <Paper sx={{ p: 3, mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                🚚 Dịch vụ vận chuyển
+              </Typography>
+              
+              <FormControl fullWidth variant="outlined">
+                <InputLabel id="service-select-label">
+                  {loadingServices ? "Đang tải dịch vụ..." : "Chọn dịch vụ vận chuyển"}
+                </InputLabel>
+                <Select
+                  labelId="service-select-label"
+                  label={loadingServices ? "Đang tải dịch vụ..." : "Chọn dịch vụ vận chuyển"}
+                  value={selectedService}
+                  onChange={(e) => setSelectedService(e.target.value as number)}
+                  disabled={loadingServices}
+                  startAdornment={loadingServices ? 
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, mr: 1 }}>
+                      <CircularProgress size={20} color="inherit" />
+                    </Box> : undefined
+                  }
+                >
+                  <MenuItem value="">
+                    <em>Chọn dịch vụ vận chuyển</em>
+                  </MenuItem>
+                  {Array.isArray(ghnServices) && ghnServices.length > 0 ? (
+                    ghnServices.map((service) => (
+                      <MenuItem key={service.service_id} value={service.service_id}>
+                        {service.short_name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem value="" disabled>
+                      <em>Không có dịch vụ vận chuyển</em>
+                    </MenuItem>
+                  )}
+                </Select>
+                {loadingServices && (
+                  <FormHelperText>Đang tải danh sách dịch vụ vận chuyển</FormHelperText>
+                )}
+              </FormControl>
+
+              {/* Shipping Fee Display */}
+              {loadingShipping && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                  <CircularProgress size={20} />
+                  <Typography>Đang tính phí vận chuyển...</Typography>
+                </Box>
+              )}
+              
+              {shippingFee > 0 && !loadingShipping && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Phí vận chuyển: {shippingFee.toLocaleString()} VNĐ
+                </Alert>
+              )}
+
+              {shippingFee === 0 && !loadingShipping && selectedService && (
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  Vui lòng chọn dịch vụ vận chuyển để tính phí ship
+                </Alert>
+              )}
+            </Paper>
+          )}
         </Grid>
       </Grid>
 
@@ -878,8 +1186,8 @@ const Checkout: React.FC = () => {
           size="large"
           color="primary"
           onClick={() => setConfirmOpen(true)}
-          // Disable if using existing address and none is selected, OR if using new address and form is invalid (validation happens on submit)
-          disabled={(!useNewAddress && !selectedAddress) || cart.length === 0 || loading}
+          // Disable if using existing address and none is selected, OR if using new address and form is invalid, OR if shipping fee is not calculated
+          disabled={(!useNewAddress && !selectedAddress) || cart.length === 0 || loading || shippingFee === 0}
         >
           {loading ? (
             <CircularProgress size={24} color="inherit" />
@@ -887,6 +1195,11 @@ const Checkout: React.FC = () => {
             paymentMethod === "cod" ? "Đặt hàng" : "Tiến hành thanh toán VNPay"
           )}
         </Button>
+        {shippingFee === 0 && cart.length > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Vui lòng chọn địa chỉ và dịch vụ vận chuyển để tính phí ship trước khi đặt hàng
+          </Typography>
+        )}
       </Box>
 
       <Dialog
