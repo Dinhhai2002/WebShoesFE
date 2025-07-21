@@ -25,6 +25,7 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import HistoryIcon from "@mui/icons-material/History";
+import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import CloseIcon from "@mui/icons-material/Close";
 import { debounce } from "lodash";
 import { CartContext } from "../context/CartContext";
@@ -544,6 +545,9 @@ const Header: React.FC = () => {
                 </MenuItem>
                 <MenuItem component={RouterLink} to={routes.OrderHistory} onClick={handleMenuClose}>
                   <HistoryIcon sx={{ mr: 1 }} /> Lịch sử đơn hàng
+                </MenuItem>
+                <MenuItem component={RouterLink} to="/return-requests" onClick={handleMenuClose}>
+                  <AssignmentReturnIcon sx={{ mr: 1 }} /> Yêu cầu trả hàng
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <LogoutIcon sx={{ mr: 1 }} /> Đăng xuất

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import * as React from "react";
+import { useEffect, useState } from 'react';
 import {
   Container,
   Typography,
@@ -33,6 +34,7 @@ import { PaymentStatusEnum } from '../utils/enum/PaymentStatusEnum';
 import { PaymentMethodEnum } from '../utils/enum/PaymentMethodEnum';
 import { orderStatusConfig, paymentStatusConfig } from '../config/statusConfig';
 import { toast } from 'react-toastify';
+import ReturnRequestModal from '../components/ReturnRequestModal';
 
 type ChipColor = 'warning' | 'info' | 'primary' | 'secondary' | 'success' | 'error' | 'default';
 
@@ -46,6 +48,14 @@ interface OrderDetail {
   product_id: number;
   quantity: number;
   price: number;
+  product_detail?: {
+    id: number;
+    name: string;
+    image_url: string;
+    color: string;
+    size: string;
+    material: string;
+  };
 }
 
 interface Order {
@@ -69,6 +79,8 @@ const OrderHistory: React.FC = () => {
   const [totalRecords, setTotalRecords] = useState(0);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [returnRequestModalOpen, setReturnRequestModalOpen] = useState(false);
+  const [selectedReturnOrderId, setSelectedReturnOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -116,7 +128,7 @@ const OrderHistory: React.FC = () => {
     setPage(value);
   };
 
-  const handleItemsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleItemsPerPageChange = (event: any) => {
     setItemsPerPage(Number(event.target.value));
     setPage(1); // Reset về trang 1 khi thay đổi số lượng items/page
   };
@@ -156,6 +168,22 @@ const OrderHistory: React.FC = () => {
   const handleCancelClose = () => {
     setCancelDialogOpen(false);
     setSelectedOrder(null);
+  };
+
+  const handleReturnRequestClick = (order: Order) => {
+    setSelectedReturnOrderId(order.id);
+    setReturnRequestModalOpen(true);
+  };
+
+  const handleReturnRequestClose = () => {
+    setReturnRequestModalOpen(false);
+    setSelectedReturnOrderId(null);
+  };
+
+  const handleReturnRequestSuccess = () => {
+    setReturnRequestModalOpen(false);
+    setSelectedReturnOrderId(null);
+    fetchOrders(); // Refresh the orders list
   };
 
   if (loading) {
@@ -303,6 +331,16 @@ const OrderHistory: React.FC = () => {
                           Hủy đơn
                         </Button>
                       )}
+                      {order.status === StatusOrderEnum.DELIVERED && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="warning"
+                          onClick={() => handleReturnRequestClick(order)}
+                        >
+                          Yêu cầu trả hàng
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -355,6 +393,14 @@ const OrderHistory: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Return Request Modal */}
+      <ReturnRequestModal
+        open={returnRequestModalOpen}
+        onClose={handleReturnRequestClose}
+        orderId={selectedReturnOrderId}
+        onSuccess={handleReturnRequestSuccess}
+      />
     </Container>
   );
 };

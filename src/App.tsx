@@ -12,6 +12,7 @@ import ProductList from "./pages/ProductList";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import OrderHistory from "./pages/OrderHistory";
 import OrderDetail from "./pages/OrderDetail";
+import ReturnRequestHistory from "./pages/ReturnRequestHistory";
 import { CartProvider } from "./context/CartContext";
 // import { customTheme } from "./style/themeCustom";
 import { ToastContainer } from "react-toastify";
@@ -65,6 +66,7 @@ function App() {
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/order-history" element={<OrderHistory />} />
                   <Route path="/order/:id" element={<OrderDetail />} />
+                  <Route path="/return-requests" element={<ReturnRequestHistory />} />
                 </Routes>
               </Box>
               <Footer />
