@@ -27,6 +27,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import HistoryIcon from "@mui/icons-material/History";
 import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import CloseIcon from "@mui/icons-material/Close";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { debounce } from "lodash";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -548,6 +549,9 @@ const Header: React.FC = () => {
                 </MenuItem>
                 <MenuItem component={RouterLink} to="/return-requests" onClick={handleMenuClose}>
                   <AssignmentReturnIcon sx={{ mr: 1 }} /> Yêu cầu trả hàng
+                </MenuItem>
+                <MenuItem component={RouterLink} to="/cancel-requests" onClick={handleMenuClose}>
+                  <CancelIcon sx={{ mr: 1 }} /> Yêu cầu hủy đơn
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <LogoutIcon sx={{ mr: 1 }} /> Đăng xuất

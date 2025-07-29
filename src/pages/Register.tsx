@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -13,18 +14,41 @@ import {
   FormHelperText,
   Box,
   CircularProgress,
+  SelectChangeEvent,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import authenticationApiService from '../services/API/AuthenticationApiService';
-import { CityResponse, DistrictResponse, WardResponse } from '../services/API/AuthenticationApiService';
+
+// GHN Interfaces
+interface GHNProvinceResponse {
+  ProvinceID: number;
+  ProvinceName: string;
+  Code: string;
+}
+
+interface GHNDistrictResponse {
+  DistrictID: number;
+  ProvinceID: number;
+  DistrictName: string;
+  Code: string;
+}
+
+interface GHNWardResponse {
+  WardCode: string;
+  DistrictID: number;
+  WardName: string;
+}
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [cities, setCities] = useState<CityResponse[]>([]);
-  const [districts, setDistricts] = useState<DistrictResponse[]>([]);
-  const [wards, setWards] = useState<WardResponse[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+  const [cities, setCities] = useState<GHNProvinceResponse[]>([]);
+  const [districts, setDistricts] = useState<GHNDistrictResponse[]>([]);
+  const [wards, setWards] = useState<GHNWardResponse[]>([]);
   const [formData, setFormData] = useState({
     user_name: '',
     full_name: '',
@@ -37,6 +61,9 @@ const Register: React.FC = () => {
     district_id: '',
     city_id: '',
     full_address: '',
+    ward_name: '',
+    district_name: '',
+    city_name: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -58,45 +85,66 @@ const Register: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCities();
+    fetchProvinces();
   }, []);
 
-  const fetchCities = async () => {
+  const fetchProvinces = async () => {
     try {
-      const response = await authenticationApiService.getAllCity();
+      setLoadingProvinces(true);
+      const response = await authenticationApiService.getGHNProvinces();
       setCities(response.data);
     } catch (error: any) {
       toast.error('Không thể tải danh sách tỉnh/thành phố');
+    } finally {
+      setLoadingProvinces(false);
     }
   };
 
-  const fetchDistricts = async (cityId: number) => {
+  const fetchDistricts = async (provinceId: number) => {
     try {
-      const response = await authenticationApiService.findDistrictByCityId(cityId);
+      setLoadingDistricts(true);
+      const response = await authenticationApiService.getGHNDistricts(provinceId);
       setDistricts(response.data);
-      setWards([]); // Reset wards when city changes
+      setWards([]); // Reset wards when province changes
+      // Reset form data
+      setFormData(prev => ({
+        ...prev,
+        district_id: '',
+        ward_id: '',
+        district_name: ''
+      }));
     } catch (error: any) {
       toast.error('Không thể tải danh sách quận/huyện');
+    } finally {
+      setLoadingDistricts(false);
     }
   };
 
   const fetchWards = async (districtId: number) => {
     try {
-      const response = await authenticationApiService.findWardByDistrictId(districtId);
+      setLoadingWards(true);
+      const response = await authenticationApiService.getGHNWards(districtId);
       setWards(response.data);
+      // Reset ward in form data
+      setFormData(prev => ({
+        ...prev,
+        ward_id: '',
+        ward_name: ''
+      }));
     } catch (error: any) {
       toast.error('Không thể tải danh sách phường/xã');
+    } finally {
+      setLoadingWards(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     // Xử lý đặc biệt cho trường ngày sinh
     if (name === 'birthday') {
-      const dateValue = value as string;
-      if (dateValue) {
-        const formattedDate = formatDate(dateValue);
+      if (value) {
+        const formattedDate = formatDate(value);
         setFormData(prev => ({
           ...prev,
           [name]: formattedDate
@@ -115,21 +163,54 @@ const Register: React.FC = () => {
     }
 
     // Clear error when user starts typing
-    if (errors[name as string]) {
+    if (errors[name]) {
       setErrors(prev => ({
         ...prev,
-        [name as string]: ''
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent) => {
+    const { name, value } = e.target;
+    
+    // Update form data with both ID and name for locations
+    if (name === 'city_id' && value) {
+      const selectedCity = cities.find(city => city.ProvinceID === Number(value));
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        city_name: selectedCity ? selectedCity.ProvinceName : ''
+      }));
+      fetchDistricts(Number(value));
+    } else if (name === 'district_id' && value) {
+      const selectedDistrict = districts.find(district => district.DistrictID === Number(value));
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        district_name: selectedDistrict ? selectedDistrict.DistrictName : ''
+      }));
+      fetchWards(Number(value));
+    } else if (name === 'ward_id' && value) {
+      const selectedWard = wards.find(ward => ward.WardCode === value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        ward_name: selectedWard ? selectedWard.WardName : ''
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
       }));
     }
 
-    // Fetch districts when city changes
-    if (name === 'city_id' && value) {
-      fetchDistricts(Number(value));
-    }
-
-    // Fetch wards when district changes
-    if (name === 'district_id' && value) {
-      fetchWards(Number(value));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
@@ -181,6 +262,7 @@ const Register: React.FC = () => {
         ward_id: Number(formData.ward_id),
         district_id: Number(formData.district_id),
         city_id: Number(formData.city_id),
+        // Location names are already in the correct format
       };
 
       // Gọi API OTP Register
@@ -212,7 +294,7 @@ const Register: React.FC = () => {
                 label="Tên đăng nhập"
                 name="user_name"
                 value={formData.user_name}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 error={!!errors.user_name}
                 helperText={errors.user_name}
               />
@@ -223,7 +305,7 @@ const Register: React.FC = () => {
                 label="Họ tên"
                 name="full_name"
                 value={formData.full_name}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 error={!!errors.full_name}
                 helperText={errors.full_name}
               />
@@ -235,7 +317,7 @@ const Register: React.FC = () => {
                 name="email"
                 type="email"
                 value={formData.email}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 error={!!errors.email}
                 helperText={errors.email}
               />
@@ -246,7 +328,7 @@ const Register: React.FC = () => {
                 label="Số điện thoại"
                 name="phone"
                 value={formData.phone}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 error={!!errors.phone}
                 helperText={errors.phone}
               />
@@ -258,7 +340,7 @@ const Register: React.FC = () => {
                 name="password"
                 type="password"
                 value={formData.password}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 error={!!errors.password}
                 helperText={errors.password}
               />
@@ -270,7 +352,7 @@ const Register: React.FC = () => {
                 name="birthday"
                 type="date"
                 value={formData.birthday ? parseDate(formData.birthday) : ''}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 InputLabelProps={{ shrink: true }}
                 error={!!errors.birthday}
                 helperText={errors.birthday}
@@ -285,16 +367,21 @@ const Register: React.FC = () => {
                 <Select
                   name="city_id"
                   value={formData.city_id}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   label="Tỉnh/Thành phố"
+                  disabled={loadingProvinces}
                 >
+                  <MenuItem value="">
+                    <em>Chọn tỉnh/thành phố</em>
+                  </MenuItem>
                   {cities.map((city) => (
-                    <MenuItem key={city.id} value={city.id}>
-                      {city.name}
+                    <MenuItem key={city.ProvinceID} value={city.ProvinceID}>
+                      {city.ProvinceName}
                     </MenuItem>
                   ))}
                 </Select>
-                <FormHelperText>{errors.city_id}</FormHelperText>
+                {loadingProvinces && <FormHelperText>Đang tải...</FormHelperText>}
+                {errors.city_id && <FormHelperText>{errors.city_id}</FormHelperText>}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -303,16 +390,21 @@ const Register: React.FC = () => {
                 <Select
                   name="district_id"
                   value={formData.district_id}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   label="Quận/Huyện"
+                  disabled={!formData.city_id || loadingDistricts}
                 >
+                  <MenuItem value="">
+                    <em>Chọn quận/huyện</em>
+                  </MenuItem>
                   {districts.map((district) => (
-                    <MenuItem key={district.id} value={district.id}>
-                      {district.name}
+                    <MenuItem key={district.DistrictID} value={district.DistrictID}>
+                      {district.DistrictName}
                     </MenuItem>
                   ))}
                 </Select>
-                <FormHelperText>{errors.district_id}</FormHelperText>
+                {loadingDistricts && <FormHelperText>Đang tải...</FormHelperText>}
+                {errors.district_id && <FormHelperText>{errors.district_id}</FormHelperText>}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -321,16 +413,21 @@ const Register: React.FC = () => {
                 <Select
                   name="ward_id"
                   value={formData.ward_id}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   label="Phường/Xã"
+                  disabled={!formData.district_id || loadingWards}
                 >
+                  <MenuItem value="">
+                    <em>Chọn phường/xã</em>
+                  </MenuItem>
                   {wards.map((ward) => (
-                    <MenuItem key={ward.id} value={ward.id}>
-                      {ward.name}
+                    <MenuItem key={ward.WardCode} value={ward.WardCode}>
+                      {ward.WardName}
                     </MenuItem>
                   ))}
                 </Select>
-                <FormHelperText>{errors.ward_id}</FormHelperText>
+                {loadingWards && <FormHelperText>Đang tải...</FormHelperText>}
+                {errors.ward_id && <FormHelperText>{errors.ward_id}</FormHelperText>}
               </FormControl>
             </Grid>
             <Grid item xs={12}>
@@ -339,7 +436,7 @@ const Register: React.FC = () => {
                 label="Địa chỉ chi tiết"
                 name="full_address"
                 value={formData.full_address}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 error={!!errors.full_address}
                 helperText={errors.full_address}
               />

@@ -112,10 +112,24 @@ const Cart: React.FC = () => {
           setGhnServices([]);
           
           const response = await authenticationApiService.getGHNDistricts(selectedProvince);
+          
+          if (!response.data || !Array.isArray(response.data)) {
+            toast.error("Không có dữ liệu quận/huyện cho tỉnh/thành phố này");
+            setGhnDistricts([]);
+            return;
+          }
+
+          if (response.data.length === 0) {
+            toast.warning("Không có quận/huyện nào cho tỉnh/thành phố này");
+            setGhnDistricts([]);
+            return;
+          }
+
           setGhnDistricts(response.data);
         } catch (error) {
           console.error("Error fetching districts:", error);
           toast.error("Không thể tải danh sách quận/huyện");
+          setGhnDistricts([]);
         } finally {
           setLoadingDistricts(false);
         }
@@ -139,10 +153,24 @@ const Cart: React.FC = () => {
           setGhnServices([]);
           
           const response = await authenticationApiService.getGHNWards(selectedDistrict);
+          
+          if (!response.data || !Array.isArray(response.data)) {
+            toast.error("Không có dữ liệu phường/xã cho quận/huyện này");
+            setGhnWards([]);
+            return;
+          }
+
+          if (response.data.length === 0) {
+            toast.warning("Không có phường/xã nào cho quận/huyện này");
+            setGhnWards([]);
+            return;
+          }
+
           setGhnWards(response.data);
         } catch (error) {
           console.error("Error fetching wards:", error);
           toast.error("Không thể tải danh sách phường/xã");
+          setGhnWards([]);
         } finally {
           setLoadingWards(false);
         }
@@ -163,18 +191,31 @@ const Cart: React.FC = () => {
           setSelectedService('');
           setShippingFee(0);
           
-          // Assuming shop_id is 1 for now - you might need to get this from your app config
           const request = {
             shop_id: 197014,
-            from_district: 1454, // Default from district (you might want to make this configurable)
+            from_district: 1454,
             to_district: selectedDistrict
           };
           
           const response = await authenticationApiService.getAvailableServices(request);
+          
+          if (!response.data || !Array.isArray(response.data)) {
+            toast.error("Không có dữ liệu dịch vụ vận chuyển cho khu vực này");
+            setGhnServices([]);
+            return;
+          }
+
+          if (response.data.length === 0) {
+            toast.warning("Không có dịch vụ vận chuyển nào cho khu vực này");
+            setGhnServices([]);
+            return;
+          }
+
           setGhnServices(response.data);
         } catch (error) {
           console.error("Error fetching services:", error);
           toast.error("Không thể tải danh sách dịch vụ vận chuyển");
+          setGhnServices([]);
         } finally {
           setLoadingServices(false);
         }

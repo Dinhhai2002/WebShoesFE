@@ -13,6 +13,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import OrderHistory from "./pages/OrderHistory";
 import OrderDetail from "./pages/OrderDetail";
 import ReturnRequestHistory from "./pages/ReturnRequestHistory";
+import CancelRequestHistory from "./pages/CancelRequestHistory";
 import { CartProvider } from "./context/CartContext";
 // import { customTheme } from "./style/themeCustom";
 import { ToastContainer } from "react-toastify";
@@ -67,6 +68,7 @@ function App() {
                   <Route path="/order-history" element={<OrderHistory />} />
                   <Route path="/order/:id" element={<OrderDetail />} />
                   <Route path="/return-requests" element={<ReturnRequestHistory />} />
+                  <Route path="/cancel-requests" element={<CancelRequestHistory />} />
                 </Routes>
               </Box>
               <Footer />

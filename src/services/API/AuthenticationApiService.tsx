@@ -43,6 +43,9 @@ interface RegisterRequest {
   district_id: number;
   city_id: number;
   full_address: string;
+  ward_name: string;
+  district_name: string;
+  city_name: string;
 }
 
 interface UserResponse {
@@ -110,6 +113,9 @@ interface OtpRegisterRequest {
   district_id: number;
   city_id: number;
   full_address: string;
+  ward_name: string;
+  district_name: string;
+  city_name: string;
 }
 
 interface ProductDetailResponse {

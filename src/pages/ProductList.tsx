@@ -37,6 +37,7 @@ import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { CartContext } from "../context/CartContext";
 import { useContext } from "react";
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 
 const ProductList = () => {
   const theme = useTheme();
@@ -415,6 +416,28 @@ const ProductList = () => {
                         fontWeight: 600,
                       }}
                     />
+                  )}
+                  {product.barcode && (
+                    <Tooltip title={`Mã vạch: ${product.barcode}`}>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: 10,
+                          left: 10,
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                          borderRadius: 1,
+                          padding: '4px 8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                        }}
+                      >
+                        <QrCode2Icon fontSize="small" />
+                        <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                          {product.barcode}
+                        </Typography>
+                      </Box>
+                    </Tooltip>
                   )}
                 </Box>
 

@@ -25,10 +25,12 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Fade
+  Fade,
+  TextField
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import orderApi from '../services/API/OrderApi';
+import cancelOrderApi from '../services/API/CancelOrderApi';
 import { StatusOrderEnum } from '../utils/enum/StatusOrderEnum';
 import { PaymentStatusEnum } from '../utils/enum/PaymentStatusEnum';
 import { PaymentMethodEnum } from '../utils/enum/PaymentMethodEnum';
@@ -81,6 +83,8 @@ const OrderHistory: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [returnRequestModalOpen, setReturnRequestModalOpen] = useState(false);
   const [selectedReturnOrderId, setSelectedReturnOrderId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -154,20 +158,58 @@ const OrderHistory: React.FC = () => {
 
   const handleCancelConfirm = async () => {
     if (!selectedOrder) return;
-    
+
     try {
-      await orderApi.cancelOrder(selectedOrder.id);
-      toast.success('Hủy đơn hàng thành công');
+      setCancelLoading(true);
+      const user = localStorage.getItem('user');
+      if (!user) {
+        toast.error('Vui lòng đăng nhập để thực hiện thao tác này');
+        return;
+      }
+
+      // Nếu đơn hàng đang ở trạng thái PENDING, hủy trực tiếp
+      if (selectedOrder.status === StatusOrderEnum.PENDING) {
+        await orderApi.cancelOrder(selectedOrder.id);
+        toast.success('Hủy đơn hàng thành công');
+        setCancelDialogOpen(false);
+        setSelectedOrder(null);
+        fetchOrders();
+        return;
+      }
+
+      // Nếu không có lý do hủy cho đơn đã xác nhận/đang xử lý
+      if (!cancelReason.trim()) {
+        toast.error('Vui lòng nhập lý do hủy đơn hàng');
+        return;
+      }
+
+      // Tạo yêu cầu hủy đơn cho đơn hàng đã xác nhận hoặc đang xử lý
+      const userData = JSON.parse(user);
+      await cancelOrderApi.createCancelRequest({
+        order_id: selectedOrder.id,
+        user_id: userData.id,
+        cancel_reason: cancelReason
+      });
+
+      toast.success('Gửi yêu cầu hủy đơn hàng thành công');
       setCancelDialogOpen(false);
+      setSelectedOrder(null);
+      setCancelReason('');
       fetchOrders();
     } catch (error: any) {
-      toast.error(error.response?.data?.messageError || 'Không thể hủy đơn hàng');
+      const errorMessage = selectedOrder.status === StatusOrderEnum.PENDING
+        ? 'Không thể hủy đơn hàng'
+        : 'Không thể gửi yêu cầu hủy đơn hàng';
+      toast.error(error.response?.data?.messageError || errorMessage);
+    } finally {
+      setCancelLoading(false);
     }
   };
 
   const handleCancelClose = () => {
     setCancelDialogOpen(false);
     setSelectedOrder(null);
+    setCancelReason('');
   };
 
   const handleReturnRequestClick = (order: Order) => {
@@ -377,19 +419,54 @@ const OrderHistory: React.FC = () => {
         TransitionProps={{ timeout: 300 }}
       >
         <DialogTitle id="cancel-dialog-title">
-          Xác nhận hủy đơn hàng
+          {selectedOrder?.status === StatusOrderEnum.PENDING 
+            ? 'Xác nhận hủy đơn hàng'
+            : 'Yêu cầu hủy đơn hàng'
+          }
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="cancel-dialog-description">
-            Bạn có chắc chắn muốn hủy đơn hàng #{selectedOrder?.id} không? Hành động này không thể hoàn tác.
+          <DialogContentText id="cancel-dialog-description" sx={{ mb: 2 }}>
+            {selectedOrder?.status === StatusOrderEnum.PENDING 
+              ? `Bạn có chắc chắn muốn hủy đơn hàng #${selectedOrder?.id}? Hành động này không thể hoàn tác.`
+              : `Bạn đang yêu cầu hủy đơn hàng #${selectedOrder?.id}. Vui lòng cho biết lý do hủy đơn:`
+            }
           </DialogContentText>
+          {selectedOrder?.status !== StatusOrderEnum.PENDING && (
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Lý do hủy đơn"
+              fullWidth
+              multiline
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              error={cancelDialogOpen && !cancelReason.trim()}
+              helperText={cancelDialogOpen && !cancelReason.trim() ? "Vui lòng nhập lý do hủy đơn" : ""}
+            />
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelClose} color="primary">
+          <Button 
+            onClick={handleCancelClose} 
+            color="primary"
+            disabled={cancelLoading}
+          >
             Hủy
           </Button>
-          <Button onClick={handleCancelConfirm} color="error" variant="contained" autoFocus>
-            Xác nhận hủy
+          <Button 
+            onClick={handleCancelConfirm} 
+            color="error" 
+            variant="contained" 
+            disabled={cancelLoading || (selectedOrder?.status !== StatusOrderEnum.PENDING && !cancelReason.trim())}
+            startIcon={cancelLoading ? <CircularProgress size={20} /> : null}
+          >
+            {cancelLoading 
+              ? 'Đang xử lý...' 
+              : selectedOrder?.status === StatusOrderEnum.PENDING
+                ? 'Xác nhận hủy'
+                : 'Gửi yêu cầu'
+            }
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Box, Typography, Grid, Button, ToggleButtonGroup, ToggleButton, Divider, CircularProgress, Alert, IconButton } from "@mui/material";
+import { Box, Typography, Grid, Button, ToggleButtonGroup, ToggleButton, Divider, CircularProgress, Alert, IconButton, useTheme } from "@mui/material";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -16,6 +16,7 @@ import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { Review } from "../services/API/ReviewApi";
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -44,6 +45,7 @@ const ProductDetailPage: React.FC = () => {
     const [quantity, setQuantity] = useState(1);
     const [reviews, setReviews] = useState<Review[]>([]);
     const [reviewLoading, setReviewLoading] = useState(false);
+    const theme = useTheme();
 
     // Fetch product and options data
     useEffect(() => {
@@ -306,6 +308,30 @@ const ProductDetailPage: React.FC = () => {
                     <Typography variant="h5" color="error" mt={1}>
                         {productDetail ? productDetail.price.toLocaleString() : product.price.toLocaleString()} VNĐ
                     </Typography>
+
+                    {/* Add barcode display */}
+                    {productDetail?.barcode && (
+                        <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1, 
+                            mt: 2,
+                            p: 1.5,
+                            borderRadius: 1,
+                            backgroundColor: theme.palette.grey[100],
+                            width: 'fit-content'
+                        }}>
+                            <QrCode2Icon color="primary" />
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                    Mã vạch
+                                </Typography>
+                                <Typography variant="body1" fontWeight="500">
+                                    {productDetail.barcode}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )}
 
                     <Divider sx={{ my: 2 }} />
 

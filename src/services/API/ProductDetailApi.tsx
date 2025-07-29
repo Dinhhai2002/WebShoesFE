@@ -19,6 +19,8 @@ export interface ProductDetail {
     price: number;
     image_url: string | null;
     status: number;
+    sku: string;
+    barcode: string;
 }
 
 export interface ProductDetailQueryParams {
