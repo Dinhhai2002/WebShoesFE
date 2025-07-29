@@ -11,6 +11,9 @@ export const routes = {
   Checkout: "/checkout",
   ProductDetail: "/product-detail/:id",
   ProductList: "/products",
+  SaveForLater: "/save-for-later",
+  ReturnRequest: "/return-requests",
+  CancelRequest: "/cancel-requests",
 };
 
 // export const publicRoutes = [

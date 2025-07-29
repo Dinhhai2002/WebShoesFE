@@ -36,6 +36,8 @@ import { ProductDetail } from "../services/API/ProductDetailApi";
 import { toast } from 'react-toastify';
 import authenticationApiService from "../services/API/AuthenticationApiService";
 import { routes } from "../routes/routes";
+import BookmarkAddIcon from '@mui/icons-material/BookmarkAdd';
+import saveForLaterApi from "../services/API/SaveForLaterApi";
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -363,6 +365,29 @@ const Cart: React.FC = () => {
     }
   };
 
+  const handleSaveForLater = async (item: CartDetail) => {
+    try {
+      const user = localStorage.getItem('user');
+      if (!user) {
+        toast.error('Vui lòng đăng nhập để sử dụng tính năng này');
+        return;
+      }
+
+      const userData = JSON.parse(user);
+      await saveForLaterApi.addToSaveForLater({
+        user_id: userData.id,
+        product_detail_id: item.product_detail.id,
+        cart_detail_id: item.id
+      });
+
+      // Remove from cart after saving
+      await removeFromCart(item.id);
+    } catch (error) {
+      console.error('Error saving for later:', error);
+      toast.error('Không thể lưu sản phẩm để mua sau');
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   };
@@ -438,6 +463,15 @@ const Cart: React.FC = () => {
                       <IconButton onClick={() => increaseQuantity(item.id)}>
                         <Add />
                       </IconButton>
+                      {isAuthenticated && (
+                        <IconButton 
+                          onClick={() => handleSaveForLater(item)}
+                          color="primary"
+                          title="Lưu để mua sau"
+                        >
+                          <BookmarkAddIcon />
+                        </IconButton>
+                      )}
                       <IconButton onClick={() => handleDialogOpen(item.id)} color="error">
                         <Delete />
                       </IconButton>

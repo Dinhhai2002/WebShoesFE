@@ -25,6 +25,7 @@ import { AuthProvider } from "./context/AuthContext";
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import UserProfile from './pages/UserProfile';
+import SaveForLater from './pages/SaveForLater';
 
 function App() {
   return (
@@ -69,6 +70,7 @@ function App() {
                   <Route path="/order/:id" element={<OrderDetail />} />
                   <Route path="/return-requests" element={<ReturnRequestHistory />} />
                   <Route path="/cancel-requests" element={<CancelRequestHistory />} />
+                  <Route path="/save-for-later" element={<SaveForLater />} />
                 </Routes>
               </Box>
               <Footer />

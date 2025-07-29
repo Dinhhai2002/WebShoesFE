@@ -34,6 +34,7 @@ import { useAuth } from "../context/AuthContext";
 import { NavLink as RouterLink, useNavigate } from "react-router-dom";
 import { routes } from "../routes/routes";
 import authenticationApiService from '../services/API/AuthenticationApiService';
+import SaveIcon from '@mui/icons-material/Save';
 
 interface ProductDetailResponse {
   id: number;
@@ -547,10 +548,13 @@ const Header: React.FC = () => {
                 <MenuItem component={RouterLink} to={routes.OrderHistory} onClick={handleMenuClose}>
                   <HistoryIcon sx={{ mr: 1 }} /> Lịch sử đơn hàng
                 </MenuItem>
-                <MenuItem component={RouterLink} to="/return-requests" onClick={handleMenuClose}>
-                  <AssignmentReturnIcon sx={{ mr: 1 }} /> Yêu cầu trả hàng
+                <MenuItem component={RouterLink} to={routes.SaveForLater} onClick={handleMenuClose}>
+                  <SaveIcon sx={{ mr: 1 }} /> Sản phẩm đã lưu
                 </MenuItem>
-                <MenuItem component={RouterLink} to="/cancel-requests" onClick={handleMenuClose}>
+                <MenuItem component={RouterLink} to={routes.ReturnRequest} onClick={handleMenuClose}>
+                    <AssignmentReturnIcon sx={{ mr: 1 }} /> Yêu cầu trả hàng
+                </MenuItem>
+                <MenuItem component={RouterLink} to={routes.CancelRequest} onClick={handleMenuClose}>
                   <CancelIcon sx={{ mr: 1 }} /> Yêu cầu hủy đơn
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>

@@ -253,8 +253,8 @@ const ProductDetailPage: React.FC = () => {
                     quantity: quantity,
                     product_detail: {
                         id: productDetail.id,
-                        name: product.name,
-                        product_id: product.id,
+                        name: product?.name,
+                        product_id: product?.id,
                         color_id: selectedColor?.id || 0,
                         color: selectedColor?.name || '',
                         size_id: selectedSize?.id || 0,
@@ -263,7 +263,7 @@ const ProductDetailPage: React.FC = () => {
                         material: selectedMaterial?.name || '',
                         stock: productDetail.stock,
                         price: productDetail.price,
-                        image_url: productDetail.image_url || product.image_url || '',
+                        image_url: productDetail.image_url || product?.image_url || '',
                         status: productDetail.status
                     }
                 };
