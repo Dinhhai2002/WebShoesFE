@@ -407,11 +407,11 @@ const Cart: React.FC = () => {
   return (
     <Container sx={{ mt: 4, mb:4 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        🛒 Your Shopping Cart
+        🛒 Giỏ hàng của bạn
       </Typography>
 
       {cartItems.length === 0 ? (
-        <Typography variant="h6">Your cart is empty.</Typography>
+        <Typography variant="h6">Giỏ hàng trống</Typography>
       ) : (
         <>
           <Grid container spacing={3}>
@@ -608,12 +608,12 @@ const Cart: React.FC = () => {
           {/* Summary Column */}
           <Box sx={{ mt: 4 }}>
             <Paper sx={{ p: 3 }}>
-              <Typography variant="h6">Order Summary</Typography>
+              <Typography variant="h6">Tổng quan đơn hàng</Typography>
               <Divider sx={{ my: 2 }} />
-              <Typography>Product Total: {formatCurrency(totalPrice)}</Typography>
-              <Typography>Shipping Fee: {formatCurrency(shippingFee)}</Typography>
+              <Typography>Tổng tiền sản phẩm: {formatCurrency(totalPrice)}</Typography>
+              <Typography>Phí vận chuyển: {formatCurrency(shippingFee)}</Typography>
               <Typography variant="h5" sx={{ mt: 2 }}>
-                Total: {formatCurrency(finalTotal)}
+                Tổng thanh toán: {formatCurrency(finalTotal)}
               </Typography>
 
               {/* Checkout Button */}
@@ -624,41 +624,18 @@ const Cart: React.FC = () => {
                 sx={{ mt: 2 }}
                 onClick={handleCheckout}
               >
-                Proceed to Checkout
+                Tiến hành thanh toán
               </Button>
             </Paper>
           </Box>
         </>
       )}
 
-      {/* Confirmation Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={handleDialogClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{"Xác nhận xóa sản phẩm khỏi giỏ hàng"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Bạn có muốn xóa sản phẩm này khỏi giỏ hàng hay không?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose} color="primary">
-            Hủy
-          </Button>
-          <Button onClick={handleRemoveConfirmed} color="primary" autoFocus>
-            Có
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* Related Products */}
       {cartItems.length > 0 && (
         <>
           <Typography variant="h5" sx={{ mt: 5 }}>
-            🔥 You Might Also Like
+            🔥 Có thể bạn cũng thích
           </Typography>
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {loadingRelated ? (
@@ -705,26 +682,24 @@ const Cart: React.FC = () => {
                         {formatCurrency(product.price)}
                       </Typography>
                       <Link 
-                      to={`/product/${product.product_id}`}
-                      state={{
-                        colorId: product.color_id,
-                        sizeId: product.size_id,
-                        materialId: product.material_id,
-                        selectedProduct: product
-                      }}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Button 
-                        variant="contained" 
-                        fullWidth 
-                        // onClick={() => handleAddToCart(product)}
-                        disabled={product.stock <= 0}
-                        sx={{ mt: 1 }}
+                        to={`/product/${product.product_id}`}
+                        state={{
+                          colorId: product.color_id,
+                          sizeId: product.size_id,
+                          materialId: product.material_id,
+                          selectedProduct: product
+                        }}
+                        style={{ textDecoration: 'none' }}
                       >
-                        {/* {product.stock > 0 ? "Add to Cart" : "Out of Stock"} */}
-                        Chi tiết sản phẩm
-                      </Button> 
-                    </Link>
+                        <Button 
+                          variant="contained" 
+                          fullWidth 
+                          disabled={product.stock <= 0}
+                          sx={{ mt: 1 }}
+                        >
+                          {product.stock > 0 ? "Xem chi tiết" : "Hết hàng"}
+                        </Button>
+                      </Link>
                     </CardContent>
                   </Card>
                 </Grid>
@@ -739,6 +714,25 @@ const Cart: React.FC = () => {
           </Grid>
         </>
       )}
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={openDialog}
+        onClose={handleDialogClose}
+      >
+        <DialogTitle>Xác nhận xóa sản phẩm</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>Hủy</Button>
+          <Button onClick={handleRemoveConfirmed} color="error" autoFocus>
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
