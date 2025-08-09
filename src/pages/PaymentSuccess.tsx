@@ -1,7 +1,24 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Container, Typography, Box, Button, CircularProgress } from '@mui/material';
-import { CheckCircleOutline, ErrorOutline } from '@mui/icons-material';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { 
+  Container, 
+  Typography, 
+  Box, 
+  Button, 
+  CircularProgress,
+  Paper,
+  useTheme,
+  alpha,
+  Stack,
+} from '@mui/material';
+import { 
+  CheckCircleOutline, 
+  ErrorOutline,
+  Home as HomeIcon,
+  ShoppingBag as ShoppingBagIcon,
+  Receipt as ReceiptIcon,
+  LocalShipping as LocalShippingIcon,
+} from '@mui/icons-material';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import orderApi from '../services/API/OrderApi';
 import { PaymentStatusEnum } from '../utils/enum/PaymentStatusEnum';
 import { toast } from 'react-toastify';
@@ -9,6 +26,7 @@ import { routes } from '../routes/routes';
 import { CartContext } from '../context/CartContext';
 
 const PaymentSuccess: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -80,98 +98,182 @@ const PaymentSuccess: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Container maxWidth="sm">
-        <Box
+      <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Paper
+          elevation={0}
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '60vh',
+            p: 4,
+            width: '100%',
+            textAlign: 'center',
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.95)})`,
+            backdropFilter: 'blur(10px)',
           }}
         >
-          <CircularProgress />
-          <Typography variant="h6" sx={{ mt: 2 }}>
-            Đang xử lý thanh toán...
-          </Typography>
-        </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <CircularProgress size={60} thickness={4} />
+            <Typography variant="h5" fontWeight={500}>
+              Đang xử lý thanh toán...
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Vui lòng không đóng trang này
+            </Typography>
+          </Box>
+        </Paper>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="sm">
-      <Box
+    <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+      <Paper
+        elevation={0}
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
+          p: 4,
+          width: '100%',
           textAlign: 'center',
-          py: 4
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.95)})`,
+          backdropFilter: 'blur(10px)',
         }}
       >
         {isSuccess ? (
           <>
-            <CheckCircleOutline
+            <Box
               sx={{
-                fontSize: 80,
-                color: 'success.main',
-                mb: 2
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                bgcolor: alpha(theme.palette.success.main, 0.1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                mb: 3,
               }}
-            />
-            <Typography variant="h4" gutterBottom>
+            >
+              <CheckCircleOutline
+                sx={{
+                  fontSize: 64,
+                  color: 'success.main',
+                }}
+              />
+            </Box>
+            <Typography variant="h4" fontWeight={600} gutterBottom>
               {searchParams.get('cod') === 'true' ? 'Đặt hàng thành công!' : 'Thanh toán thành công!'}
             </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
               {searchParams.get('cod') === 'true' 
                 ? 'Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.'
                 : 'Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.'}
             </Typography>
+
+            <Box sx={{ 
+              p: 3, 
+              bgcolor: alpha(theme.palette.success.main, 0.05),
+              borderRadius: 2,
+              mb: 4
+            }}>
+              <Stack spacing={2}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <LocalShippingIcon color="success" />
+                  <Typography>
+                    Đơn hàng của bạn sẽ được giao trong vòng 3-5 ngày làm việc
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <ReceiptIcon color="success" />
+                  <Typography>
+                    Bạn có thể theo dõi đơn hàng trong mục "Lịch sử đơn hàng"
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
           </>
         ) : (
           <>
-            <ErrorOutline
+            <Box
               sx={{
-                fontSize: 80,
-                color: 'error.main',
-                mb: 2
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                mb: 3,
               }}
-            />
-            <Typography variant="h4" gutterBottom>
+            >
+              <ErrorOutline
+                sx={{
+                  fontSize: 64,
+                  color: 'error.main',
+                }}
+              />
+            </Box>
+            <Typography variant="h4" fontWeight={600} gutterBottom>
               Thanh toán thất bại!
             </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
               Rất tiếc, đã có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại sau.
             </Typography>
           </>
         )}
-        <Box sx={{ mt: 3 }}>
+
+        <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} justifyContent="center">
           <Button
             variant="contained"
-            color="primary"
-            onClick={() => navigate('/')} 
-            sx={{ mr: 2 }}
+            startIcon={<HomeIcon />}
+            onClick={() => navigate('/')}
+            sx={{
+              py: 1.5,
+              px: 3,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1rem',
+              flex: { xs: '1', sm: '0 0 auto' },
+            }}
           >
             Về trang chủ
           </Button>
           <Button
             variant="outlined"
+            startIcon={<ShoppingBagIcon />}
             onClick={() => navigate(routes.ProductList)}
-            sx={{ mr: 2 }}
+            sx={{
+              py: 1.5,
+              px: 3,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1rem',
+              flex: { xs: '1', sm: '0 0 auto' },
+            }}
           >
             Tiếp tục mua sắm
           </Button>
           <Button
             variant="contained"
             color="secondary"
+            startIcon={<ReceiptIcon />}
             onClick={() => navigate(routes.OrderHistory)}
+            sx={{
+              py: 1.5,
+              px: 3,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1rem',
+              flex: { xs: '1', sm: '0 0 auto' },
+            }}
           >
-            Xem lịch sử đơn hàng
+            Xem đơn hàng
           </Button>
-        </Box>
-      </Box>
+        </Stack>
+      </Paper>
     </Container>
   );
 };

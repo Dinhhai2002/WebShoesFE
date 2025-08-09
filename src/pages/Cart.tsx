@@ -24,7 +24,9 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-  Alert
+  Alert,
+  Chip,
+  Stack
 } from "@mui/material";
 import { Add, Remove, Delete, LocalShipping } from "@mui/icons-material";
 import { useNavigate, Link } from "react-router-dom";
@@ -38,6 +40,9 @@ import authenticationApiService from "../services/API/AuthenticationApiService";
 import { routes } from "../routes/routes";
 import BookmarkAddIcon from '@mui/icons-material/BookmarkAdd';
 import saveForLaterApi from "../services/API/SaveForLaterApi";
+import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import InfoIcon from '@mui/icons-material/Info';
+import { Tooltip, Fade, Zoom, Badge } from '@mui/material';
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -405,100 +410,342 @@ const Cart: React.FC = () => {
   }
 
   return (
-    <Container sx={{ mt: 4, mb:4 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        🛒 Giỏ hàng của bạn
-      </Typography>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Enhanced Header */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2, 
+        mb: 4,
+        borderBottom: '2px solid',
+        borderColor: 'primary.main',
+        pb: 2
+      }}>
+        <ShoppingBagIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            Giỏ hàng của bạn
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            {cartItems.length} sản phẩm
+          </Typography>
+        </Box>
+      </Box>
 
       {cartItems.length === 0 ? (
-        <Typography variant="h6">Giỏ hàng trống</Typography>
+        <Paper sx={{ 
+          p: 4, 
+          textAlign: 'center',
+          borderRadius: 2,
+          bgcolor: 'background.default'
+        }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>Giỏ hàng trống</Typography>
+          <Button
+            variant="contained"
+            component={Link}
+            to="/products"
+            startIcon={<ShoppingBagIcon />}
+            sx={{
+              borderRadius: 2,
+              py: 1,
+              px: 3,
+              background: 'primary.main',
+              '&:hover': {
+                background: 'primary.dark',
+              }
+            }}
+          >
+            Tiếp tục mua sắm
+          </Button>
+        </Paper>
       ) : (
-        <>
-          <Grid container spacing={3}>
-            {/* Product Column */}
-            <Grid item xs={12}>
-              {cartItems.map((item) => (
-                <Card key={item.id} sx={{ display: "flex", mb: 2, p: 2 }}>
-                  <Link 
-                    to={`/product/${item.product_detail.product_id}`} 
-                    state={{
-                      colorId: item.product_detail.color_id,
-                      sizeId: item.product_detail.size_id,
-                      materialId: item.product_detail.material_id,
-                      selectedProduct: item.product_detail
-                    }}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <CardMedia
-                      component="img"
-                      sx={{ width: 100, height: 100, objectFit: "cover" }}
-                      image={item.product_detail.image_url}
-                      alt={item.product_detail.name}
-                    />
-                  </Link>
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography 
-                      variant="h6" 
-                      sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        wordWrap: 'break-word',
-                        lineHeight: 1.2,
-                        height: '2.4em',
-                        width: '40%'
+        <Grid container spacing={3}>
+          {/* Cart Items Section */}
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 0, borderRadius: 2, overflow: 'hidden' }}>
+              {cartItems.map((item, index) => (
+                <React.Fragment key={item.id}>
+                  <Box sx={{ 
+                    display: "flex", 
+                    p: 2,
+                    position: 'relative',
+                    '&:hover': {
+                      bgcolor: 'action.hover'
+                    }
+                  }}>
+                    <Link 
+                      to={`/product/${item.product_detail.product_id}`} 
+                      state={{
+                        colorId: item.product_detail.color_id,
+                        sizeId: item.product_detail.size_id,
+                        materialId: item.product_detail.material_id,
+                        selectedProduct: item.product_detail
                       }}
+                      style={{ textDecoration: 'none' }}
                     >
-                      {item.product_detail.name}
-                    </Typography>
-                    <Typography color="text.secondary">
-                      {formatCurrency(item.product_detail.price)} x {item.quantity}
-                    </Typography>
-                    <CardActions>
-                      <IconButton onClick={() => decreaseQuantity(item.id)}>
-                        <Remove />
-                      </IconButton>
-                      <Typography>{item.quantity}</Typography>
-                      <IconButton onClick={() => increaseQuantity(item.id)}>
-                        <Add />
-                      </IconButton>
-                      {isAuthenticated && (
-                        <IconButton 
-                          onClick={() => handleSaveForLater(item)}
-                          color="primary"
-                          title="Lưu để mua sau"
+                      <Box sx={{ position: 'relative' }}>
+                        <CardMedia
+                          component="img"
+                          sx={{ 
+                            width: 120,
+                            height: 120,
+                            objectFit: "cover",
+                            borderRadius: 1
+                          }}
+                          image={item.product_detail.image_url}
+                          alt={item.product_detail.name}
+                        />
+                        {item.product_detail.stock <= 5 && (
+                          <Chip
+                            label={`Còn ${item.product_detail.stock} sản phẩm`}
+                            color="warning"
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              bottom: 5,
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              fontSize: '0.7rem'
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Link>
+
+                    <Box sx={{ 
+                      flexGrow: 1, 
+                      ml: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between'
+                    }}>
+                      <Box>
+                        <Link 
+                          to={`/product/${item.product_detail.product_id}`}
+                          style={{ textDecoration: 'none', color: 'inherit' }}
                         >
-                          <BookmarkAddIcon />
-                        </IconButton>
-                      )}
-                      <IconButton onClick={() => handleDialogOpen(item.id)} color="error">
-                        <Delete />
-                      </IconButton>
-                    </CardActions>
-                  </CardContent>
-                </Card>
+                          <Typography 
+                            variant="h6" 
+                            sx={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              wordWrap: 'break-word',
+                              lineHeight: 1.2,
+                              height: '2.4em',
+                              fontWeight: 500,
+                              '&:hover': {
+                                color: 'primary.main'
+                              }
+                            }}
+                          >
+                            {item.product_detail.name}
+                          </Typography>
+                        </Link>
+
+                        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                          <Chip 
+                            label={item.product_detail.color} 
+                            size="small"
+                            sx={{ bgcolor: 'grey.100' }}
+                          />
+                          <Chip 
+                            label={item.product_detail.size} 
+                            size="small"
+                            sx={{ bgcolor: 'grey.100' }}
+                          />
+                          <Chip 
+                            label={item.product_detail.material} 
+                            size="small"
+                            sx={{ bgcolor: 'grey.100' }}
+                          />
+                        </Stack>
+                      </Box>
+
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mt: 2
+                      }}>
+                        <Typography 
+                          variant="h6" 
+                          color="primary"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {formatCurrency(item.product_detail.price * item.quantity)}
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Paper 
+                            elevation={0}
+                            sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 1,
+                              overflow: 'hidden'
+                            }}
+                          >
+                            <IconButton 
+                              onClick={() => decreaseQuantity(item.id)}
+                              size="small"
+                              sx={{ borderRadius: 0 }}
+                            >
+                              <Remove fontSize="small" />
+                            </IconButton>
+                            <Typography 
+                              sx={{ 
+                                px: 2,
+                                fontWeight: 600,
+                                userSelect: 'none'
+                              }}
+                            >
+                              {item.quantity}
+                            </Typography>
+                            <IconButton 
+                              onClick={() => increaseQuantity(item.id)}
+                              size="small"
+                              sx={{ borderRadius: 0 }}
+                              disabled={item.quantity >= item.product_detail.stock}
+                            >
+                              <Add fontSize="small" />
+                            </IconButton>
+                          </Paper>
+
+                          {isAuthenticated && (
+                            <Tooltip title="Lưu để mua sau">
+                              <IconButton 
+                                onClick={() => handleSaveForLater(item)}
+                                size="small"
+                                sx={{ 
+                                  color: 'primary.main',
+                                  '&:hover': {
+                                    bgcolor: 'primary.lighter'
+                                  }
+                                }}
+                              >
+                                <BookmarkAddIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+
+                          <Tooltip title="Xóa sản phẩm">
+                            <IconButton 
+                              onClick={() => handleDialogOpen(item.id)}
+                              size="small"
+                              sx={{ 
+                                color: 'error.main',
+                                '&:hover': {
+                                  bgcolor: 'error.lighter'
+                                }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                  {index < cartItems.length - 1 && (
+                    <Divider />
+                  )}
+                </React.Fragment>
               ))}
-            </Grid>
+            </Paper>
           </Grid>
 
-          {/* Shipping Section */}
-          <Box sx={{ mt: 4 }}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <LocalShipping /> Tính phí vận chuyển
-              </Typography>
-              
-              <Grid container spacing={2}>
-                {/* Province Selection */}
-                <Grid item xs={12} md={4}>
-                  <FormControl fullWidth>
+          {/* Summary and Shipping Section */}
+          <Grid item xs={12} md={4}>
+            <Stack spacing={3}>
+              {/* Order Summary */}
+              <Paper sx={{ p: 3, borderRadius: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Tổng quan đơn hàng
+                </Typography>
+                <Stack spacing={2}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'text.secondary'
+                  }}>
+                    <Typography>Tổng tiền sản phẩm</Typography>
+                    <Typography>{formatCurrency(totalPrice)}</Typography>
+                  </Box>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'text.secondary'
+                  }}>
+                    <Typography>Phí vận chuyển</Typography>
+                    <Typography>
+                      {shippingFee > 0 ? formatCurrency(shippingFee) : '---'}
+                    </Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Tổng thanh toán
+                    </Typography>
+                    <Typography 
+                      variant="h6" 
+                      color="primary"
+                      sx={{ fontWeight: 600 }}
+                    >
+                      {formatCurrency(finalTotal)}
+                    </Typography>
+                  </Box>
+
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={handleCheckout}
+                    disabled={!selectedService}
+                    sx={{
+                      mt: 2,
+                      py: 1.5,
+                      borderRadius: 2,
+                      background: 'primary.main',
+                      '&:hover': {
+                        background: 'primary.dark',
+                      }
+                    }}
+                  >
+                    {selectedService ? 'Tiến hành thanh toán' : 'Vui lòng chọn phương thức vận chuyển'}
+                  </Button>
+                </Stack>
+              </Paper>
+
+              {/* Shipping Calculator */}
+              <Paper sx={{ p: 3, borderRadius: 2 }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1, 
+                  mb: 2 
+                }}>
+                  <LocalShipping color="primary" />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Tính phí vận chuyển
+                  </Typography>
+                </Box>
+
+                <Stack spacing={2}>
+                  <FormControl>
                     <InputLabel>Tỉnh/Thành phố</InputLabel>
                     <Select
                       value={selectedProvince}
                       onChange={(e) => setSelectedProvince(e.target.value as number)}
                       label="Tỉnh/Thành phố"
                       disabled={loadingProvinces}
+                      size="small"
                     >
                       <MenuItem value="">
                         <em>Chọn tỉnh/thành phố</em>
@@ -509,19 +756,22 @@ const Cart: React.FC = () => {
                         </MenuItem>
                       ))}
                     </Select>
-                    {loadingProvinces && <FormHelperText>Đang tải...</FormHelperText>}
+                    {loadingProvinces && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                        <CircularProgress size={16} />
+                        <FormHelperText>Đang tải...</FormHelperText>
+                      </Box>
+                    )}
                   </FormControl>
-                </Grid>
 
-                {/* District Selection */}
-                <Grid item xs={12} md={4}>
-                  <FormControl fullWidth>
+                  <FormControl>
                     <InputLabel>Quận/Huyện</InputLabel>
                     <Select
                       value={selectedDistrict}
                       onChange={(e) => setSelectedDistrict(e.target.value as number)}
                       label="Quận/Huyện"
                       disabled={!selectedProvince || loadingDistricts}
+                      size="small"
                     >
                       <MenuItem value="">
                         <em>Chọn quận/huyện</em>
@@ -532,19 +782,22 @@ const Cart: React.FC = () => {
                         </MenuItem>
                       ))}
                     </Select>
-                    {loadingDistricts && <FormHelperText>Đang tải...</FormHelperText>}
+                    {loadingDistricts && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                        <CircularProgress size={16} />
+                        <FormHelperText>Đang tải...</FormHelperText>
+                      </Box>
+                    )}
                   </FormControl>
-                </Grid>
 
-                {/* Ward Selection */}
-                <Grid item xs={12} md={4}>
-                  <FormControl fullWidth>
+                  <FormControl>
                     <InputLabel>Phường/Xã</InputLabel>
                     <Select
                       value={selectedWard}
                       onChange={(e) => setSelectedWard(e.target.value as string)}
                       label="Phường/Xã"
                       disabled={!selectedDistrict || loadingWards}
+                      size="small"
                     >
                       <MenuItem value="">
                         <em>Chọn phường/xã</em>
@@ -555,19 +808,22 @@ const Cart: React.FC = () => {
                         </MenuItem>
                       ))}
                     </Select>
-                    {loadingWards && <FormHelperText>Đang tải...</FormHelperText>}
+                    {loadingWards && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                        <CircularProgress size={16} />
+                        <FormHelperText>Đang tải...</FormHelperText>
+                      </Box>
+                    )}
                   </FormControl>
-                </Grid>
 
-                {/* Service Selection */}
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
+                  <FormControl>
                     <InputLabel>Dịch vụ vận chuyển</InputLabel>
                     <Select
                       value={selectedService}
                       onChange={(e) => setSelectedService(e.target.value as number)}
                       label="Dịch vụ vận chuyển"
                       disabled={!selectedWard || loadingServices}
+                      size="small"
                     >
                       <MenuItem value="">
                         <em>Chọn dịch vụ vận chuyển</em>
@@ -584,68 +840,96 @@ const Cart: React.FC = () => {
                         </MenuItem>
                       )}
                     </Select>
-                    {loadingServices && <FormHelperText>Đang tải...</FormHelperText>}
+                    {loadingServices && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                        <CircularProgress size={16} />
+                        <FormHelperText>Đang tải...</FormHelperText>
+                      </Box>
+                    )}
                   </FormControl>
-                </Grid>
-              </Grid>
 
-              {/* Shipping Fee Display */}
-              {loadingShipping && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
-                  <CircularProgress size={20} />
-                  <Typography>Đang tính phí vận chuyển...</Typography>
-                </Box>
-              )}
-              
-              {shippingFee > 0 && !loadingShipping && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  Phí vận chuyển: {formatCurrency(shippingFee)}
-                </Alert>
-              )}
-            </Paper>
-          </Box>
+                  {loadingShipping && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={20} />
+                      <Typography variant="body2">
+                        Đang tính phí vận chuyển...
+                      </Typography>
+                    </Box>
+                  )}
 
-          {/* Summary Column */}
-          <Box sx={{ mt: 4 }}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6">Tổng quan đơn hàng</Typography>
-              <Divider sx={{ my: 2 }} />
-              <Typography>Tổng tiền sản phẩm: {formatCurrency(totalPrice)}</Typography>
-              <Typography>Phí vận chuyển: {formatCurrency(shippingFee)}</Typography>
-              <Typography variant="h5" sx={{ mt: 2 }}>
-                Tổng thanh toán: {formatCurrency(finalTotal)}
-              </Typography>
-
-              {/* Checkout Button */}
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                sx={{ mt: 2 }}
-                onClick={handleCheckout}
-              >
-                Tiến hành thanh toán
-              </Button>
-            </Paper>
-          </Box>
-        </>
+                  {shippingFee > 0 && !loadingShipping && (
+                    <Alert 
+                      severity="info"
+                      icon={<InfoIcon />}
+                      sx={{ 
+                        borderRadius: 1,
+                        '& .MuiAlert-message': {
+                          width: '100%'
+                        }
+                      }}
+                    >
+                      <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        width: '100%'
+                      }}>
+                        <Typography variant="body2">Phí vận chuyển:</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {formatCurrency(shippingFee)}
+                        </Typography>
+                      </Box>
+                    </Alert>
+                  )}
+                </Stack>
+              </Paper>
+            </Stack>
+          </Grid>
+        </Grid>
       )}
 
-      {/* Related Products */}
+      {/* Related Products Section - Keep existing code but enhance styling */}
       {cartItems.length > 0 && (
-        <>
-          <Typography variant="h5" sx={{ mt: 5 }}>
+        <Box sx={{ mt: 6 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              mb: 3,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              '&::after': {
+                content: '""',
+                flex: 1,
+                height: 2,
+                backgroundColor: 'primary.main',
+                opacity: 0.2,
+                borderRadius: 1
+              }
+            }}
+          >
             🔥 Có thể bạn cũng thích
           </Typography>
-          <Grid container spacing={2} sx={{ mt: 2 }}>
+          
+          <Grid container spacing={2}>
             {loadingRelated ? (
               <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
                 <CircularProgress />
               </Grid>
             ) : relatedProducts.length > 0 ? (
               relatedProducts.map((product) => (
-                <Grid item xs={6} md={3} key={product.id}>
-                  <Card>
+                <Grid item xs={6} sm={4} md={3} key={product.id}>
+                  <Card 
+                    sx={{ 
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'transform 0.3s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-4px)'
+                      }
+                    }}
+                  >
                     <Link 
                       to={`/product/${product.product_id}`}
                       state={{
@@ -658,12 +942,19 @@ const Cart: React.FC = () => {
                     >
                       <CardMedia 
                         component="img" 
-                        height="140" 
+                        height="200"
                         image={product.image_url || '/placeholder.png'} 
-                        alt={product.name} 
+                        alt={product.name}
+                        sx={{ 
+                          objectFit: 'cover',
+                          transition: 'transform 0.3s ease-in-out',
+                          '&:hover': {
+                            transform: 'scale(1.05)'
+                          }
+                        }}
                       />
                     </Link>
-                    <CardContent>
+                    <CardContent sx={{ flexGrow: 1 }}>
                       <Typography 
                         variant="h6" 
                         sx={{
@@ -673,15 +964,24 @@ const Cart: React.FC = () => {
                           overflow: 'hidden',
                           wordWrap: 'break-word',
                           lineHeight: 1.2,
-                          height: '2.4em'
+                          height: '2.4em',
+                          mb: 1,
+                          fontWeight: 500
                         }}
                       >
                         {product.name}
                       </Typography>
-                      <Typography color="primary" sx={{ fontWeight: 'bold' }}>
+                      <Typography 
+                        color="primary" 
+                        variant="h6"
+                        sx={{ fontWeight: 600 }}
+                      >
                         {formatCurrency(product.price)}
                       </Typography>
-                      <Link 
+                      <Button 
+                        variant="contained"
+                        fullWidth
+                        component={Link}
                         to={`/product/${product.product_id}`}
                         state={{
                           colorId: product.color_id,
@@ -689,46 +989,75 @@ const Cart: React.FC = () => {
                           materialId: product.material_id,
                           selectedProduct: product
                         }}
-                        style={{ textDecoration: 'none' }}
+                        disabled={product.stock <= 0}
+                        sx={{ 
+                          mt: 2,
+                          borderRadius: 1,
+                          textTransform: 'none'
+                        }}
                       >
-                        <Button 
-                          variant="contained" 
-                          fullWidth 
-                          disabled={product.stock <= 0}
-                          sx={{ mt: 1 }}
-                        >
-                          {product.stock > 0 ? "Xem chi tiết" : "Hết hàng"}
-                        </Button>
-                      </Link>
+                        {product.stock > 0 ? "Xem chi tiết" : "Hết hàng"}
+                      </Button>
                     </CardContent>
                   </Card>
                 </Grid>
               ))
             ) : (
               <Grid item xs={12}>
-                <Typography variant="body1" color="text.secondary" textAlign="center">
+                <Typography 
+                  variant="body1" 
+                  color="text.secondary" 
+                  textAlign="center"
+                >
                   Không tìm thấy sản phẩm liên quan
                 </Typography>
               </Grid>
             )}
           </Grid>
-        </>
+        </Box>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* Enhanced Confirmation Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleDialogClose}
+        TransitionComponent={Fade}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            p: 1
+          }
+        }}
       >
-        <DialogTitle>Xác nhận xóa sản phẩm</DialogTitle>
+        <DialogTitle sx={{ 
+          pb: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Delete color="error" />
+          Xác nhận xóa sản phẩm
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDialogClose}>Hủy</Button>
-          <Button onClick={handleRemoveConfirmed} color="error" autoFocus>
+          <Button 
+            onClick={handleDialogClose}
+            variant="outlined"
+            sx={{ borderRadius: 1 }}
+          >
+            Hủy
+          </Button>
+          <Button 
+            onClick={handleRemoveConfirmed} 
+            color="error" 
+            variant="contained"
+            sx={{ borderRadius: 1 }}
+            autoFocus
+          >
             Xóa
           </Button>
         </DialogActions>

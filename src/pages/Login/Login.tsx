@@ -1,6 +1,5 @@
 import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import {
   Avatar,
   Box,
@@ -11,6 +10,9 @@ import {
   Alert,
   Divider,
   Button,
+  Container,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -27,8 +29,15 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { loginGoogleError, loginGoogleSuccess } from "../../utils/LoginGoogle";
 import { useAuth } from "../../context/AuthContext";
 import { CartContext } from "../../context/CartContext";
+import { 
+  LockOutlined as LockOutlinedIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  ArrowBack as ArrowBackIcon
+} from "@mui/icons-material";
 
 const Login = () => {
+  const theme = useTheme();
   const { login } = useAuth();
   const cartContext = useContext(CartContext);
   const [loading, setLoading] = useState(false);
@@ -85,126 +94,214 @@ const Login = () => {
   }, []);
 
   return (
-    <StyledGrid container>
+    <Container component="main" maxWidth="lg" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
       <CssBaseline />
-      {/* <Grid
-        item
-        xs={false}
-        sm={4}
-        md={7}
-        sx={{
-          backgroundRepeat: "no-repeat",
-          backgroundColor: (t) =>
-            t.palette.mode === "light"
-              ? t.palette.grey[50]
-              : t.palette.grey[900],
-          backgroundSize: "contain",
-          backgroundPosition: "center",
-        }}
-      /> */}
-      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
-        <StyledPaper>
-          <Link to={"/"}>
-            <StyledAvatar>
-              <LockOutlinedIcon />
-            </StyledAvatar>
-          </Link>
-          {message && <Alert severity="info">{message}</Alert>}
-          <Typography component="h3" variant="h5">
-            Đăng Nhập
-          </Typography>
-          <StyledForm onSubmit={handleSubmit(onSubmitHandler)}>
-            <InputText
-              errors={errors}
-              register={register}
-              autoFocus
-              name="name"
-              label="Tên người dùng"
-            />
-            <InputPassword
-              errors={errors}
-              name="password"
-              label="Mật khẩu"
-              register={register}
-            />
-            <Button
-              variant="contained"
-              fullWidth
-              type="submit"
-              sx={{ mt: 4, mb: 4, padding: 1 }}
+      <Grid container spacing={3} alignItems="center" justifyContent="center">
+        {/* Left side - Brand/Welcome */}
+        <Grid item xs={12} md={6} sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Box
+            sx={{
+              p: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
+                background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                backgroundClip: 'text',
+                textFillColor: 'transparent',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
             >
-              {" "}
-              Đăng Nhập
-            </Button>
-            <Grid container>
-              <Grid item xs>
-                <StyledLink to={routes.ForgotPassword}>
-                  Quên mật khẩu?
-                </StyledLink>
-              </Grid>
-              <Grid item>
-                <StyledLink to={routes.Register}>
-                  Chưa có tài khoản? Đăng ký
-                </StyledLink>
-              </Grid>
-            </Grid>
-            {/* <Divider sx={{ my: 4 }}>hoặc</Divider>
-            <GoogleOAuthProvider
-              clientId={process.env.REACT_APP_KEY_LOGIN_GOOGLE || ""}
-            >
-              <GoogleLogin
-                onSuccess={(response) => {
-                  setLoading(true);
-                  loginGoogleSuccess(response);
+              Welcome Back!
+            </Typography>
+            <Box
+              component="img"
+              src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/logo1.jpg?alt=media"
+              alt="Login"
+              sx={{
+                width: '100%',
+                maxWidth: 400,
+                height: 'auto',
+              }}
+            />
+            <Typography variant="h6" color="text.secondary" align="center">
+              Đăng nhập để khám phá những sản phẩm tuyệt vời của chúng tôi
+            </Typography>
+          </Box>
+        </Grid>
+
+        {/* Right side - Login Form */}
+        <Grid item xs={12} md={6}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.95)})`,
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Link to="/" style={{ textDecoration: 'none' }}>
+                <Button
+                  sx={{
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.2),
+                    },
+                  }}
+                >
+                  <ArrowBackIcon color="primary" />
+                </Button>
+              </Link>
+              <Typography variant="h4" fontWeight={600}>
+                Đăng Nhập
+              </Typography>
+            </Box>
+
+            {message && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: 2,
+                  '& .MuiAlert-icon': {
+                    fontSize: '2rem'
+                  }
                 }}
-                onError={(error) => {
-                  setLoading(true);
-                  loginGoogleError(error);
+              >
+                {message}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit(onSubmitHandler)}>
+              <Box sx={{ mb: 3 }}>
+                <InputText
+                  errors={errors}
+                  register={register}
+                  autoFocus
+                  name="name"
+                  label="Tên người dùng"
+                  startIcon={<PersonIcon />}
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                    }
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ mb: 4 }}>
+                <InputPassword
+                  errors={errors}
+                  name="password"
+                  label="Mật khẩu"
+                  register={register}
+                  fullWidth
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                    }
+                  }}
+                />
+              </Box>
+
+              <LoadingButton
+                type="submit"
+                variant="contained"
+                fullWidth
+                loading={loading}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontSize: '1rem',
+                  textTransform: 'none',
+                  boxShadow: theme.shadows[2],
+                  '&:hover': {
+                    boxShadow: theme.shadows[4],
+                  },
                 }}
-              />
-            </GoogleOAuthProvider> */}
-          </StyledForm>
-        </StyledPaper>
+              >
+                Đăng Nhập
+              </LoadingButton>
+
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Link 
+                  to={routes.ForgotPassword}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Typography 
+                    color="primary"
+                    sx={{ 
+                      fontWeight: 500,
+                      '&:hover': {
+                        textDecoration: 'underline'
+                      }
+                    }}
+                  >
+                    Quên mật khẩu?
+                  </Typography>
+                </Link>
+                <Link 
+                  to={routes.Register}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Typography 
+                    color="primary"
+                    sx={{ 
+                      fontWeight: 500,
+                      '&:hover': {
+                        textDecoration: 'underline'
+                      }
+                    }}
+                  >
+                    Chưa có tài khoản? Đăng ký
+                  </Typography>
+                </Link>
+              </Box>
+
+              {/* <Divider sx={{ my: 4 }}>
+                <Typography color="text.secondary" variant="body2">
+                  hoặc đăng nhập với
+                </Typography>
+              </Divider>
+
+              <GoogleOAuthProvider clientId={process.env.REACT_APP_KEY_LOGIN_GOOGLE || ""}>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <GoogleLogin
+                    onSuccess={(response) => {
+                      setLoading(true);
+                      loginGoogleSuccess(response);
+                    }}
+                    onError={(error) => {
+                      setLoading(true);
+                      loginGoogleError(error);
+                    }}
+                    theme="outline"
+                    size="large"
+                    shape="rectangular"
+                    width="300px"
+                  />
+                </Box>
+              </GoogleOAuthProvider> */}
+            </form>
+          </Paper>
+        </Grid>
       </Grid>
-    </StyledGrid>
+    </Container>
   );
 };
-
-const StyledGrid = styled(Grid)(({ theme }) => ({
-  height: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-}));
-
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(4),
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  maxWidth: 800,
-  width: "100%",
-}));
-
-const StyledAvatar = styled(Avatar)(({ theme }) => ({
-  margin: theme.spacing(1),
-  backgroundColor: theme.palette.primary.main,
-}));
-
-const StyledForm = styled("form")(({ theme }) => ({
-  width: "100%",
-  marginTop: theme.spacing(1),
-}));
-
-const StyledLink = styled(Link)(({ theme }) => ({
-  color: theme.palette.primary.main,
-  textDecoration: "none",
-}));
-
-// const GoogleButton = styled(GoogleLogin)(({ theme }) => ({
-//   width: "100%",
-//   justifyContent: "center",
-//   marginTop: theme.spacing(2),
-// }));
 
 export default Login;

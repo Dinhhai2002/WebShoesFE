@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { Box, Typography, Grid, Button, ToggleButtonGroup, ToggleButton, Divider, CircularProgress, Alert, IconButton, useTheme } from "@mui/material";
+import { Box, Typography, Grid, Button, ToggleButtonGroup, ToggleButton, Divider, CircularProgress, Alert, IconButton, useTheme, Container, Paper, Chip } from "@mui/material";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -17,6 +17,12 @@ import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { Review } from "../services/API/ReviewApi";
 import QrCode2Icon from '@mui/icons-material/QrCode2';
+import { Breadcrumbs, Link, Skeleton, Fade, Zoom, Rating } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import SecurityIcon from '@mui/icons-material/Security';
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -74,9 +80,9 @@ const ProductDetailPage: React.FC = () => {
 
                 // Fetch all options
                 const [colorsResponse, sizesResponse, materialsResponse] = await Promise.all([
-                    authenticationApiService.getColors({ status: 1 }),
-                    authenticationApiService.getSizes({ status: 1 }),
-                    authenticationApiService.getMaterials({ status: 1 })
+                    authenticationApiService.getColors({ status: 1, limit: 500 }),
+                    authenticationApiService.getSizes({ status: 1, limit: 500 }),
+                    authenticationApiService.getMaterials({ status: 1, limit: 500 })
                 ]);
 
                 // Filter available options
@@ -293,190 +299,398 @@ const ProductDetailPage: React.FC = () => {
     }
 
     return (
-        <Box sx={{ flexGrow: 1, p: 3 }}>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
+            {/* Breadcrumbs Navigation */}
+            <Breadcrumbs 
+                separator={<NavigateNextIcon fontSize="small" />} 
+                sx={{ mb: 4 }}
+            >
+                <Link
+                    color="inherit"
+                    href="/"
+                    sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        '&:hover': { color: 'primary.main' }
+                    }}
+                >
+                    <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+                    Trang chủ
+                </Link>
+                <Link
+                    color="inherit"
+                    href="/products"
+                    sx={{ '&:hover': { color: 'primary.main' } }}
+                >
+                    Sản phẩm
+                </Link>
+                <Typography color="text.primary">{product?.name}</Typography>
+            </Breadcrumbs>
+
             <Grid container spacing={4}>
-                {/* Bên trái: Hình ảnh */}
+                {/* Left side: Product Images */}
                 <Grid item xs={12} md={5}>
-                    <ProductImageGallery 
-                        images={productImages.length > 0 ? productImages : [product.image_url || 'https://via.placeholder.com/400x400?text=No+Image']} 
-                    />
+                    <Zoom in={!loading} style={{ transitionDelay: loading ? '0ms' : '200ms' }}>
+                        <Box>
+                            <ProductImageGallery 
+                                images={productImages.length > 0 ? productImages : [product?.image_url || 'https://via.placeholder.com/400x400?text=No+Image']} 
+                            />
+                        </Box>
+                    </Zoom>
                 </Grid>
 
-                {/* Bên phải: Thông tin sản phẩm */}
+                {/* Right side: Product Info */}
                 <Grid item xs={12} md={7}>
-                    <Typography variant="h4" fontWeight="bold">{product.name}</Typography>
-                    <Typography variant="h5" color="error" mt={1}>
-                        {productDetail ? productDetail.price.toLocaleString() : product.price.toLocaleString()} VNĐ
-                    </Typography>
-
-                    {/* Add barcode display */}
-                    {productDetail?.barcode && (
-                        <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1, 
-                            mt: 2,
-                            p: 1.5,
-                            borderRadius: 1,
-                            backgroundColor: theme.palette.grey[100],
-                            width: 'fit-content'
-                        }}>
-                            <QrCode2Icon color="primary" />
-                            <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Mã vạch
-                                </Typography>
-                                <Typography variant="body1" fontWeight="500">
-                                    {productDetail.barcode}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    )}
-
-                    <Divider sx={{ my: 2 }} />
-
-                    {/* Màu sắc */}
-                    {availableColors.length > 0 && (
-                        <>
-                            <Typography variant="subtitle1" fontWeight="bold">Màu sắc:</Typography>
-                            <ToggleButtonGroup 
-                                value={selectedColor?.id || ''} 
-                                exclusive 
-                                onChange={(_, value) => {
-                                    const color = availableColors.find(c => c.id === value);
-                                    if (color) setSelectedColor(color);
+                    <Fade in={!loading} style={{ transitionDelay: loading ? '0ms' : '300ms' }}>
+                        <Box>
+                            {/* Product Title and Price */}
+                            <Typography 
+                                variant="h4" 
+                                sx={{ 
+                                    fontWeight: 700,
+                                    mb: 2,
+                                    background: theme.palette.primary.main,
+                                    backgroundImage: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                                    backgroundClip: 'text',
+                                    WebkitBackgroundClip: 'text',
+                                    color: 'transparent',
                                 }}
                             >
-                                {availableColors.map((color) => (
-                                    <ToggleButton key={color.id} value={color.id}>{color.name}</ToggleButton>
-                                ))}
-                            </ToggleButtonGroup>
-                        </>
-                    )}
-
-                    {/* Kích thước */}
-                    {availableSizes.length > 0 && (
-                        <>
-                            <Typography variant="subtitle1" fontWeight="bold" mt={2}>Kích thước:</Typography>
-                            <ToggleButtonGroup 
-                                value={selectedSize?.id || ''} 
-                                exclusive 
-                                onChange={(_, value) => {
-                                    const size = availableSizes.find(s => s.id === value);
-                                    if (size) setSelectedSize(size);
-                                }}
-                            >
-                                {availableSizes.map((size) => (
-                                    <ToggleButton key={size.id} value={size.id}>{size.name}</ToggleButton>
-                                ))}
-                            </ToggleButtonGroup>
-                        </>
-                    )}
-
-                    {/* Chất liệu */}
-                    {availableMaterials.length > 0 && (
-                        <>
-                            <Typography variant="subtitle1" fontWeight="bold" mt={2}>Chất liệu:</Typography>
-                            <ToggleButtonGroup 
-                                value={selectedMaterial?.id || ''} 
-                                exclusive 
-                                onChange={(_, value) => {
-                                    const material = availableMaterials.find(m => m.id === value);
-                                    if (material) setSelectedMaterial(material);
-                                }}
-                            >
-                                {availableMaterials.map((material) => (
-                                    <ToggleButton key={material.id} value={material.id}>{material.name}</ToggleButton>
-                                ))}
-                            </ToggleButtonGroup>
-                        </>
-                    )}
-
-                    <Divider sx={{ my: 2 }} />
-
-                    {/* Quantity Controls */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="subtitle1" fontWeight="bold" sx={{ mr: 2 }}>
-                            Số lượng:
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                            <IconButton 
-                                onClick={() => handleQuantityChange('decrease')}
-                                disabled={quantity <= 1}
-                                size="small"
-                            >
-                                <RemoveIcon />
-                            </IconButton>
-                            <Typography sx={{ px: 2, minWidth: 40, textAlign: 'center' }}>
-                                {quantity}
+                                {product?.name}
                             </Typography>
-                            <IconButton 
-                                onClick={() => handleQuantityChange('increase')}
-                                disabled={quantity >= (productDetail?.stock || 0)}
-                                size="small"
-                            >
-                                <AddIcon />
-                            </IconButton>
-                        </Box>
-                    </Box>
 
-                    {/* Hiển thị số lượng tồn kho */}
-                    {productDetail && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mr: 2 }}>
-                                Tồn kho:
-                            </Typography>
                             <Box sx={{ 
                                 display: 'flex', 
-                                alignItems: 'center',
-                                gap: 1,
-                                p: 1,
-                                borderRadius: 1,
-                                border: '1px solid #e0e0e0',
-                                backgroundColor: productDetail.stock > 10 ? '#e8f5e9' :
-                                                productDetail.stock > 0 ? '#fff3e0' : '#ffebee'
+                                alignItems: 'center', 
+                                gap: 2, 
+                                mb: 3 
                             }}>
                                 <Typography 
-                                    color={productDetail.stock > 10 ? 'success.main' :
-                                            productDetail.stock > 0 ? 'warning.main' : 'error.main'}
-                                    fontWeight="bold"
+                                    variant="h5" 
+                                    color="error" 
+                                    sx={{ 
+                                        fontWeight: 600,
+                                        fontSize: '2rem'
+                                    }}
                                 >
-                                    {productDetail.stock}
+                                    {productDetail ? productDetail.price.toLocaleString() : product?.price.toLocaleString()} VNĐ
                                 </Typography>
+                                {productDetail?.stock > 0 && (
+                                    <Chip
+                                        label="Còn hàng"
+                                        color="success"
+                                        size="small"
+                                        icon={<VerifiedIcon />}
+                                        sx={{ fontWeight: 500 }}
+                                    />
+                                )}
                             </Box>
-                        </Box>
-                    )}
 
-                    <Button 
-                        variant="contained"
-                        color="primary"
-                        size="large" 
-                        disabled={!productDetail || productDetail.stock <= 0}
-                        startIcon={<ShoppingCartIcon />}
-                        onClick={handleAddToCart}
-                        sx={{
-                            fontSize: '1.1rem',
-                            fontWeight: 'bold',
-                            padding: '12px 24px',
-                            textTransform: 'uppercase',
-                            '&:hover': {
-                                transform: 'scale(1.02)',
-                                transition: 'all 0.2s ease-in-out'
-                            }
-                        }}
-                    >
-                        {productDetail && productDetail.stock > 0 ? "Thêm vào giỏ hàng" : "Sản phẩm không khả dụng"}
-                    </Button>
+                            {/* Product Benefits */}
+                            <Box sx={{ 
+                                display: 'flex', 
+                                gap: 2, 
+                                mb: 4,
+                                flexWrap: 'wrap'
+                            }}>
+                                <Paper sx={{ 
+                                    p: 1.5, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 1,
+                                    flex: 1,
+                                    minWidth: 200,
+                                    bgcolor: 'primary.light',
+                                    color: 'primary.contrastText'
+                                }}>
+                                    <LocalShippingIcon />
+                                    <Box>
+                                        <Typography variant="subtitle2" fontWeight={600}>
+                                            Hỗ trợ vận chuyển toàn quốc
+                                        </Typography>
+                                        <Typography variant="caption">
+                                            
+                                        </Typography>
+                                    </Box>
+                                </Paper>
+
+                                <Paper sx={{ 
+                                    p: 1.5, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: 1,
+                                    flex: 1,
+                                    minWidth: 200,
+                                    bgcolor: 'secondary.light',
+                                    color: 'secondary.contrastText'
+                                }}>
+                                    <SecurityIcon />
+                                    <Box>
+                                        <Typography variant="subtitle2" fontWeight={600}>
+                                            Bảo hành 12 tháng
+                                        </Typography>
+                                        <Typography variant="caption">
+                                            1 đổi 1 trong 30 ngày
+                                        </Typography>
+                                    </Box>
+                                </Paper>
+                            </Box>
+
+                            {/* Barcode Section */}
+                            {productDetail?.barcode && (
+                                <Paper sx={{ 
+                                    p: 2,
+                                    mb: 3,
+                                    borderRadius: 2,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    background: `linear-gradient(45deg, ${theme.palette.background.paper}, ${theme.palette.grey[50]})`
+                                }}>
+                                    <Box sx={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: 2
+                                    }}>
+                                        <QrCode2Icon color="primary" sx={{ fontSize: 40 }} />
+                                        <Box>
+                                            <Typography variant="subtitle2" color="text.secondary">
+                                                Mã sản phẩm
+                                            </Typography>
+                                            <Typography variant="h6" fontWeight={600}>
+                                                {productDetail.barcode}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Paper>
+                            )}
+
+                            <Divider sx={{ my: 3 }} />
+
+                            {/* Options Selection */}
+                            <Box sx={{ mb: 4 }}>
+                                {/* Colors */}
+                                {availableColors.length > 0 && (
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                            Màu sắc:
+                                        </Typography>
+                                        <ToggleButtonGroup 
+                                            value={selectedColor?.id || ''} 
+                                            exclusive 
+                                            onChange={(_, value) => {
+                                                const color = availableColors.find(c => c.id === value);
+                                                if (color) setSelectedColor(color);
+                                            }}
+                                            sx={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 1,
+                                                '& .MuiToggleButton-root': {
+                                                    borderRadius: 1,
+                                                    border: `1px solid ${theme.palette.divider}`,
+                                                    '&.Mui-selected': {
+                                                        backgroundColor: 'primary.main',
+                                                        color: 'primary.contrastText',
+                                                        '&:hover': {
+                                                            backgroundColor: 'primary.dark',
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            {availableColors.map((color) => (
+                                                <ToggleButton 
+                                                    key={color.id} 
+                                                    value={color.id}
+                                                    sx={{
+                                                        minWidth: 80,
+                                                        py: 1
+                                                    }}
+                                                >
+                                                    {color.name}
+                                                </ToggleButton>
+                                            ))}
+                                        </ToggleButtonGroup>
+                                    </Box>
+                                )}
+
+                                {/* Sizes */}
+                                {availableSizes.length > 0 && (
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                            Kích thước:
+                                        </Typography>
+                                        <ToggleButtonGroup 
+                                            value={selectedSize?.id || ''} 
+                                            exclusive 
+                                            onChange={(_, value) => {
+                                                const size = availableSizes.find(s => s.id === value);
+                                                if (size) setSelectedSize(size);
+                                            }}
+                                            sx={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 1,
+                                                '& .MuiToggleButton-root': {
+                                                    borderRadius: 1,
+                                                    minWidth: 60,
+                                                    '&.Mui-selected': {
+                                                        backgroundColor: 'primary.main',
+                                                        color: 'primary.contrastText',
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            {availableSizes.map((size) => (
+                                                <ToggleButton key={size.id} value={size.id}>
+                                                    {size.name}
+                                                </ToggleButton>
+                                            ))}
+                                        </ToggleButtonGroup>
+                                    </Box>
+                                )}
+
+                                {/* Materials */}
+                                {availableMaterials.length > 0 && (
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                            Chất liệu:
+                                        </Typography>
+                                        <ToggleButtonGroup 
+                                            value={selectedMaterial?.id || ''} 
+                                            exclusive 
+                                            onChange={(_, value) => {
+                                                const material = availableMaterials.find(m => m.id === value);
+                                                if (material) setSelectedMaterial(material);
+                                            }}
+                                            sx={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: 1,
+                                                '& .MuiToggleButton-root': {
+                                                    borderRadius: 1,
+                                                    minWidth: 100,
+                                                    '&.Mui-selected': {
+                                                        backgroundColor: 'primary.main',
+                                                        color: 'primary.contrastText',
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            {availableMaterials.map((material) => (
+                                                <ToggleButton key={material.id} value={material.id}>
+                                                    {material.name}
+                                                </ToggleButton>
+                                            ))}
+                                        </ToggleButtonGroup>
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {/* Quantity and Stock */}
+                            <Box sx={{ 
+                                display: 'flex', 
+                                flexDirection: 'column',
+                                gap: 2,
+                                mb: 4 
+                            }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Typography variant="subtitle1" fontWeight="bold">
+                                        Số lượng:
+                                    </Typography>
+                                    <Paper 
+                                        elevation={0}
+                                        sx={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            borderRadius: 1,
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        <IconButton 
+                                            onClick={() => handleQuantityChange('decrease')}
+                                            disabled={quantity <= 1}
+                                            size="small"
+                                            sx={{ borderRadius: 0 }}
+                                        >
+                                            <RemoveIcon />
+                                        </IconButton>
+                                        <Typography 
+                                            sx={{ 
+                                                px: 3,
+                                                minWidth: 50,
+                                                textAlign: 'center',
+                                                fontWeight: 600
+                                            }}
+                                        >
+                                            {quantity}
+                                        </Typography>
+                                        <IconButton 
+                                            onClick={() => handleQuantityChange('increase')}
+                                            disabled={quantity >= (productDetail?.stock || 0)}
+                                            size="small"
+                                            sx={{ borderRadius: 0 }}
+                                        >
+                                            <AddIcon />
+                                        </IconButton>
+                                    </Paper>
+                                </Box>
+
+                                {productDetail && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            Tồn kho:
+                                        </Typography>
+                                        <Chip
+                                            label={`${productDetail.stock} sản phẩm`}
+                                            color={productDetail.stock > 10 ? 'success' : productDetail.stock > 0 ? 'warning' : 'error'}
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ fontWeight: 500 }}
+                                        />
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {/* Add to Cart Button */}
+                            <Button 
+                                variant="contained"
+                                size="large" 
+                                disabled={!productDetail || productDetail.stock <= 0}
+                                startIcon={<ShoppingCartIcon />}
+                                onClick={handleAddToCart}
+                                sx={{
+                                    width: '100%',
+                                    py: 1.5,
+                                    fontSize: '1.1rem',
+                                    fontWeight: 'bold',
+                                    textTransform: 'uppercase',
+                                    borderRadius: 2,
+                                    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                                    boxShadow: theme.shadows[4],
+                                    '&:hover': {
+                                        background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                                        transform: 'translateY(-2px)',
+                                        transition: 'all 0.2s ease-in-out'
+                                    }
+                                }}
+                            >
+                                {productDetail && productDetail.stock > 0 ? "Thêm vào giỏ hàng" : "Sản phẩm không khả dụng"}
+                            </Button>
+                        </Box>
+                    </Fade>
                 </Grid>
             </Grid>
 
-            {/* Block đánh giá sản phẩm */}
-            <ProductReview 
-                reviews={reviews} 
-                loading={reviewLoading} 
-                productId={product?.id} 
-            />
-        </Box>
+            {/* Product Reviews Section */}
+            <Box sx={{ mt: 6 }}>
+                <ProductReview 
+                    reviews={reviews} 
+                    loading={reviewLoading} 
+                    productId={product?.id} 
+                />
+            </Box>
+        </Container>
     );
 };
 

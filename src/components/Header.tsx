@@ -18,23 +18,32 @@ import {
   Paper,
   Divider,
   CircularProgress,
-  Badge
+  Badge,
+  useTheme,
+  alpha,
+  Tooltip,
+  Fade,
+  Stack,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import LogoutIcon from "@mui/icons-material/Logout";
-import HistoryIcon from "@mui/icons-material/History";
-import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
-import CloseIcon from "@mui/icons-material/Close";
-import CancelIcon from "@mui/icons-material/Cancel";
+import {
+  Search as SearchIcon,
+  ShoppingCart as ShoppingCartIcon,
+  AccountCircle as AccountCircleIcon,
+  Logout as LogoutIcon,
+  History as HistoryIcon,
+  AssignmentReturn as AssignmentReturnIcon,
+  Close as CloseIcon,
+  Cancel as CancelIcon,
+  Save as SaveIcon,
+  Person as PersonIcon,
+  Settings as SettingsIcon,
+} from "@mui/icons-material";
 import { debounce } from "lodash";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { NavLink as RouterLink, useNavigate } from "react-router-dom";
 import { routes } from "../routes/routes";
 import authenticationApiService from '../services/API/AuthenticationApiService';
-import SaveIcon from '@mui/icons-material/Save';
 
 interface ProductDetailResponse {
   id: number;
@@ -57,6 +66,7 @@ interface ProductDetailResponse {
 }
 
 const Header: React.FC = () => {
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [cartAnchorEl, setCartAnchorEl] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -231,19 +241,63 @@ const Header: React.FC = () => {
   return (
     <AppBar
       position="sticky"
-      sx={{ backgroundColor: "white", color: "black", boxShadow: 1 }}
+      elevation={0}
+      sx={{
+        backgroundColor: alpha(theme.palette.background.paper, 0.95),
+        backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}
     >
-      <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+      <Toolbar sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
         {/* Logo */}
-        <Box display="flex" alignItems="center" component={RouterLink} to={routes.Home} sx={{ textDecoration: 'none' }}>
-          <img src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/logo1.jpg?alt=media" alt="Logo" style={{ height: 40,borderRadius: '50%' }} />
-          <Typography variant="h6" fontWeight="bold" ml={1}>
+        <Box 
+          display="flex" 
+          alignItems="center" 
+          component={RouterLink} 
+          to={routes.Home} 
+          sx={{ 
+            textDecoration: 'none',
+            '&:hover': {
+              opacity: 0.8,
+            },
+          }}
+        >
+          <img 
+            src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/logo1.jpg?alt=media" 
+            alt="Logo" 
+            style={{ 
+              height: 45,
+              borderRadius: '50%',
+              border: `2px solid ${theme.palette.primary.main}`,
+            }} 
+          />
+          <Typography 
+            variant="h5" 
+            fontWeight="bold" 
+            ml={1.5}
+            sx={{
+              background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
             WEB SUNNY
           </Typography>
         </Box>
 
-        {/* Thanh tìm kiếm */}
-        <Box className="search-container" sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', position: 'relative' }}>
+        {/* Search Bar */}
+        <Box 
+          className="search-container" 
+          sx={{ 
+            flexGrow: 1, 
+            display: { xs: 'none', md: 'flex' }, 
+            justifyContent: 'center', 
+            position: 'relative',
+            mx: 4,
+          }}
+        >
           <TextField
             size="small"
             placeholder="Tìm kiếm sản phẩm..."
@@ -255,23 +309,27 @@ const Header: React.FC = () => {
               }
             }}
             sx={{
-              width: '50%',
-              bgcolor: 'white',
+              width: '60%',
               '& .MuiOutlinedInput-root': {
+                borderRadius: 3,
+                bgcolor: alpha(theme.palette.background.paper, 0.8),
+                transition: 'all 0.3s ease',
                 '& fieldset': {
-                  borderColor: '#e0e0e0',
-                  borderWidth: 2,
+                  borderColor: alpha(theme.palette.primary.main, 0.2),
+                  borderWidth: 1,
                 },
                 '&:hover fieldset': {
                   borderColor: 'primary.main',
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: 'primary.main',
+                '&.Mui-focused': {
+                  bgcolor: 'background.paper',
+                  boxShadow: theme.shadows[2],
+                  '& fieldset': {
+                    borderColor: 'primary.main',
+                    borderWidth: 1,
+                  },
                 },
               },
-              '& .MuiInputBase-input': {
-                padding: '10px 14px',
-              }
             }}
             InputProps={{
               startAdornment: (
@@ -298,21 +356,33 @@ const Header: React.FC = () => {
               )
             }}
           />
-          {/* Gợi ý tìm kiếm */}
+
+          {/* Search Suggestions */}
           {showSuggestions && suggestions.length > 0 && searchTerm && (
             <Paper
+              elevation={3}
               sx={{
                 position: 'absolute',
                 top: '100%',
-                left: '25%',
-                right: '25%',
+                left: '20%',
+                right: '20%',
                 zIndex: 1000,
                 mt: 1,
                 maxHeight: '400px',
-                overflow: 'auto'
+                overflow: 'auto',
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.background.paper, 0.95),
+                backdropFilter: 'blur(8px)',
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, borderBottom: 1, borderColor: 'divider' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                p: 2,
+                borderBottom: '1px solid',
+                borderColor: 'divider'
+              }}>
                 <Typography variant="subtitle2" color="text.secondary">
                   Gợi ý tìm kiếm
                 </Typography>
@@ -320,19 +390,19 @@ const Header: React.FC = () => {
                   <CloseIcon fontSize="small" />
                 </IconButton>
               </Box>
-              <List>
+
+              <List sx={{ py: 0 }}>
                 {suggestions.map((suggestion) => (
                   <ListItem
                     key={suggestion.id}
                     onClick={() => handleSearchClick(suggestion)}
                     sx={{ 
                       cursor: 'pointer',
+                      transition: 'all 0.2s ease',
                       '&:hover': {
-                        backgroundColor: 'action.hover'
+                        bgcolor: alpha(theme.palette.primary.main, 0.08)
                       },
-                      display: 'flex',
-                      gap: 2,
-                      py: 1
+                      py: 2
                     }}
                   >
                     <Box
@@ -340,30 +410,48 @@ const Header: React.FC = () => {
                       src={suggestion.image_url || '/placeholder-image.jpg'}
                       alt={suggestion.name}
                       sx={{
-                        width: 60,
-                        height: 60,
+                        width: 70,
+                        height: 70,
                         objectFit: 'cover',
-                        borderRadius: 1
+                        borderRadius: 1.5,
+                        mr: 2,
+                        border: '1px solid',
+                        borderColor: 'divider'
                       }}
                     />
                     <Box sx={{ flex: 1 }}>
-                      <ListItemText 
-                        primary={
-                          <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                            {suggestion.name}
-                          </Typography>
-                        }
-                        secondary={
-                          <>
-                            <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
-                              {suggestion.price.toLocaleString('vi-VN')}đ
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {suggestion.color} - {suggestion.size} - {suggestion.material}
-                            </Typography>
-                          </>
-                        }
-                      />
+                      <Typography 
+                        variant="subtitle1" 
+                        sx={{ 
+                          fontWeight: 500,
+                          mb: 0.5,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {suggestion.name}
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        color="primary" 
+                        sx={{ fontWeight: 600, mb: 0.5 }}
+                      >
+                        {suggestion.price.toLocaleString('vi-VN')}đ
+                      </Typography>
+                      <Typography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{
+                          display: 'block',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {suggestion.color} - {suggestion.size} - {suggestion.material}
+                      </Typography>
                     </Box>
                   </ListItem>
                 ))}
@@ -372,37 +460,57 @@ const Header: React.FC = () => {
           )}
         </Box>
 
-        {/* Giỏ hàng + User */}
-        <Box display="flex" alignItems="center">
-          {/* Giỏ hàng */}
+        {/* Cart & User */}
+        <Stack direction="row" spacing={1} alignItems="center">
+          {/* Cart */}
           <Box
             sx={{ position: 'relative' }}
             onMouseEnter={handleCartMenuOpen}
             onMouseLeave={handleCartMenuClose}
           >
-            <IconButton sx={{ mr: 2 }}>
-              <Badge badgeContent={cartItemCount} color="error" showZero>
-                <ShoppingCartIcon />
-              </Badge>
-            </IconButton>
+            <Tooltip title="Giỏ hàng" arrow>
+              <IconButton 
+                sx={{ 
+                  color: 'text.primary',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.08)
+                  }
+                }}
+              >
+                <Badge 
+                  badgeContent={cartItemCount} 
+                  color="primary"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '0.75rem',
+                      height: 20,
+                      minWidth: 20,
+                    }
+                  }}
+                >
+                  <ShoppingCartIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
 
             {/* Cart Menu */}
             <Menu
               anchorEl={cartAnchorEl}
               open={Boolean(cartAnchorEl)}
               onClose={handleCartMenuClose}
+              TransitionComponent={Fade}
               PaperProps={{
                 onMouseEnter: () => {},
                 onMouseLeave: handleCartMenuClose,
+                elevation: 3,
                 sx: {
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  width: 300,
-                  maxHeight: 400,
+                  mt: 1.5,
+                  width: 360,
+                  maxHeight: 480,
                   overflow: 'auto',
-                  mt: 1,
-                  boxShadow: 3,
+                  borderRadius: 2,
+                  bgcolor: alpha(theme.palette.background.paper, 0.95),
+                  backdropFilter: 'blur(8px)',
                 },
               }}
               anchorOrigin={{
@@ -415,155 +523,293 @@ const Header: React.FC = () => {
               }}
             >
               {cart.length === 0 ? (
-                <MenuItem disabled>
-                  <Typography>Giỏ hàng trống</Typography>
-                </MenuItem>
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Giỏ hàng trống
+                  </Typography>
+                </Box>
               ) : (
                 <Box>
-                  {cart.map((item, index) => (
-                    item && item.product_detail ? (
-                      <MenuItem key={index} sx={{ py: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                          <img 
-                            src={item.product_detail.image_url} 
-                            alt={item.product_detail.name}
-                            style={{ width: 50, height: 50, objectFit: 'cover', marginRight: 10 }}
-                          />
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <ListItemText
-                              primary={
+                  <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      Giỏ hàng ({cartItemCount} sản phẩm)
+                    </Typography>
+                  </Box>
+
+                  <List sx={{ py: 0 }}>
+                    {cart.map((item, index) => (
+                      item && item.product_detail ? (
+                        <ListItem 
+                          key={index} 
+                          sx={{ 
+                            py: 2,
+                            borderBottom: index < cart.length - 1 ? '1px solid' : 'none',
+                            borderColor: 'divider'
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', width: '100%', gap: 2 }}>
+                            <img 
+                              src={item.product_detail.image_url} 
+                              alt={item.product_detail.name}
+                              style={{ 
+                                width: 60, 
+                                height: 60, 
+                                objectFit: 'cover',
+                                borderRadius: 8,
+                                border: '1px solid',
+                                borderColor: theme.palette.divider
+                              }}
+                            />
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{
+                                  fontWeight: 500,
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  mb: 0.5
+                                }}
+                              >
+                                {item.product_detail.name}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="primary"
+                                sx={{ fontWeight: 600, mb: 0.5 }}
+                              >
+                                {item.product_detail.price.toLocaleString('vi-VN')}đ
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Typography
-                                  variant="subtitle1"
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  SL: {item.quantity}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
                                   sx={{
-                                    fontWeight: 'medium',
-                                    textOverflow: 'ellipsis',
-                                    overflow: 'hidden',
-                                    whiteSpace: 'nowrap'
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 1,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
                                   }}
                                 >
-                                  {item.product_detail.name}
+                                  • {item.product_detail.color} - {item.product_detail.size}
                                 </Typography>
-                              }
-                              secondary={
-                                <>
-                                  <Typography
-                                    variant="body2"
-                                    color="primary"
-                                    sx={{
-                                      fontWeight: 'bold',
-                                      textOverflow: 'ellipsis',
-                                      overflow: 'hidden',
-                                      whiteSpace: 'nowrap'
-                                    }}
-                                  >
-                                    {item.product_detail.price.toLocaleString('vi-VN')}đ
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{
-                                      textOverflow: 'ellipsis',
-                                      overflow: 'hidden',
-                                      whiteSpace: 'nowrap'
-                                    }}
-                                  >
-                                    {item.product_detail.color} - {item.product_detail.size} - {item.product_detail.material}
-                                  </Typography>
-                                </>
-                              }
-                            />
+                              </Box>
+                            </Box>
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Typography variant="body2" color="text.secondary">
-                              x{item.quantity}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </MenuItem>
-                    ) : null
-                  ))}
-                  <Divider />
-                  <MenuItem sx={{ justifyContent: 'space-between' }}>
-                    <Typography variant="subtitle1">Tổng tiền:</Typography>
-                    <Typography variant="subtitle1" color="primary">
-                      {formatCurrency(totalPrice)}
-                    </Typography>
-                  </MenuItem>
-                  <MenuItem>
+                        </ListItem>
+                      ) : null
+                    ))}
+                  </List>
+
+                  <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.03) }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mb: 2
+                    }}>
+                      <Typography variant="subtitle1">Tổng tiền:</Typography>
+                      <Typography 
+                        variant="subtitle1" 
+                        color="primary"
+                        fontWeight={600}
+                      >
+                        {formatCurrency(totalPrice)}
+                      </Typography>
+                    </Box>
                     <Button
                       variant="contained"
                       fullWidth
                       component={RouterLink}
                       to={routes.Cart}
                       onClick={handleCartMenuClose}
+                      sx={{
+                        py: 1,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontSize: '0.9rem'
+                      }}
                     >
                       Xem giỏ hàng
                     </Button>
-                  </MenuItem>
+                  </Box>
                 </Box>
               )}
             </Menu>
           </Box>
 
-          {/* Nếu chưa login */}
+          {/* User Menu */}
           {!isAuthenticated ? (
-            <>
+            <Stack direction="row" spacing={1}>
               <Button
                 component={RouterLink}
                 to={routes.Login}
                 variant="outlined"
-                color="primary"
-                sx={{ mr: 1 }}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 2,
+                  borderColor: alpha(theme.palette.primary.main, 0.5),
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: alpha(theme.palette.primary.main, 0.08)
+                  }
+                }}
               >
-                Sign In
+                Đăng nhập
               </Button>
               <Button
                 component={RouterLink}
                 to={routes.Register}
                 variant="contained"
-                color="primary"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 2,
+                  boxShadow: 'none',
+                  '&:hover': {
+                    boxShadow: 'none',
+                    bgcolor: 'primary.dark'
+                  }
+                }}
               >
-                Sign Up
+                Đăng ký
               </Button>
-            </>
+            </Stack>
           ) : (
-            /* Nếu đã login */
-            <>
-              <IconButton onClick={handleMenuOpen}>
-                <Avatar 
-                  src={userAvatar}
-                  sx={{ bgcolor: "primary.main" }}
+            <Box>
+              <Tooltip title="Tài khoản" arrow>
+                <IconButton 
+                  onClick={handleMenuOpen}
+                  sx={{
+                    p: 0.5,
+                    border: '2px solid',
+                    borderColor: alpha(theme.palette.primary.main, userAvatar ? 0.2 : 0.8),
+                    '&:hover': {
+                      borderColor: 'primary.main'
+                    }
+                  }}
                 >
-                  {userAvatar ? '' : 'U'}
-                </Avatar>
-              </IconButton>
+                  <Avatar
+                    src={userAvatar}
+                    sx={{
+                      width: 35,
+                      height: 35,
+                      bgcolor: userAvatar ? 'transparent' : 'primary.main'
+                    }}
+                  >
+                    {userAvatar ? '' : <PersonIcon />}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
+                TransitionComponent={Fade}
+                PaperProps={{
+                  elevation: 3,
+                  sx: {
+                    mt: 1.5,
+                    minWidth: 220,
+                    borderRadius: 2,
+                    bgcolor: alpha(theme.palette.background.paper, 0.95),
+                    backdropFilter: 'blur(8px)',
+                    overflow: 'visible',
+                    '&:before': {
+                      content: '""',
+                      display: 'block',
+                      position: 'absolute',
+                      top: 0,
+                      right: 14,
+                      width: 10,
+                      height: 10,
+                      bgcolor: 'background.paper',
+                      transform: 'translateY(-50%) rotate(45deg)',
+                      zIndex: 0,
+                    },
+                  },
+                }}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
               >
-                <MenuItem component={RouterLink} to="/profile" onClick={handleMenuClose}>
-                  <AccountCircleIcon sx={{ mr: 1 }} /> Tài khoản
+                <MenuItem 
+                  component={RouterLink} 
+                  to="/profile" 
+                  onClick={handleMenuClose}
+                  sx={{ py: 1.5 }}
+                >
+                  <SettingsIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Typography>Tài khoản của tôi</Typography>
                 </MenuItem>
-                <MenuItem component={RouterLink} to={routes.OrderHistory} onClick={handleMenuClose}>
-                  <HistoryIcon sx={{ mr: 1 }} /> Lịch sử đơn hàng
+
+                <MenuItem 
+                  component={RouterLink} 
+                  to={routes.OrderHistory} 
+                  onClick={handleMenuClose}
+                  sx={{ py: 1.5 }}
+                >
+                  <HistoryIcon sx={{ mr: 2, color: 'info.main' }} />
+                  <Typography>Lịch sử đơn hàng</Typography>
                 </MenuItem>
-                <MenuItem component={RouterLink} to={routes.SaveForLater} onClick={handleMenuClose}>
-                  <SaveIcon sx={{ mr: 1 }} /> Sản phẩm đã lưu
+
+                <MenuItem 
+                  component={RouterLink} 
+                  to={routes.SaveForLater} 
+                  onClick={handleMenuClose}
+                  sx={{ py: 1.5 }}
+                >
+                  <SaveIcon sx={{ mr: 2, color: 'success.main' }} />
+                  <Typography>Sản phẩm đã lưu</Typography>
                 </MenuItem>
-                <MenuItem component={RouterLink} to={routes.ReturnRequest} onClick={handleMenuClose}>
-                    <AssignmentReturnIcon sx={{ mr: 1 }} /> Yêu cầu trả hàng
+
+                <MenuItem 
+                  component={RouterLink} 
+                  to={routes.ReturnRequest} 
+                  onClick={handleMenuClose}
+                  sx={{ py: 1.5 }}
+                >
+                  <AssignmentReturnIcon sx={{ mr: 2, color: 'warning.main' }} />
+                  <Typography>Yêu cầu trả hàng</Typography>
                 </MenuItem>
-                <MenuItem component={RouterLink} to={routes.CancelRequest} onClick={handleMenuClose}>
-                  <CancelIcon sx={{ mr: 1 }} /> Yêu cầu hủy đơn
+
+                <MenuItem 
+                  component={RouterLink} 
+                  to={routes.CancelRequest} 
+                  onClick={handleMenuClose}
+                  sx={{ py: 1.5 }}
+                >
+                  <CancelIcon sx={{ mr: 2, color: 'error.main' }} />
+                  <Typography>Yêu cầu hủy đơn</Typography>
                 </MenuItem>
-                <MenuItem onClick={handleLogout}>
-                  <LogoutIcon sx={{ mr: 1 }} /> Đăng xuất
+
+                <Divider sx={{ my: 1 }} />
+
+                <MenuItem 
+                  onClick={handleLogout}
+                  sx={{ py: 1.5 }}
+                >
+                  <LogoutIcon sx={{ mr: 2, color: 'error.main' }} />
+                  <Typography>Đăng xuất</Typography>
                 </MenuItem>
               </Menu>
-            </>
+            </Box>
           )}
-        </Box>
+        </Stack>
       </Toolbar>
     </AppBar>
   );

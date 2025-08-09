@@ -31,6 +31,13 @@ import { toast } from 'react-toastify';
 import reviewApi from '../services/API/ReviewApi';
 import { useAuth } from '../context/AuthContext';
 import { StatusOrderEnum } from '../utils/enum/StatusOrderEnum';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import PersonIcon from '@mui/icons-material/Person';
+import DiscountIcon from '@mui/icons-material/Discount';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
+import { alpha } from '@mui/material/styles';
 
 const OrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -144,179 +151,236 @@ const OrderDetail: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h4">
-          Chi tiết đơn hàng #{order.id}
-        </Typography>
-        <Button variant="outlined" onClick={() => navigate('/order-history')}>
+      {/* Enhanced Header */}
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          mb: 4,
+          pb: 2,
+          borderBottom: '2px solid',
+          borderColor: 'primary.main'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <ReceiptLongIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              Chi tiết đơn hàng #{order.id}
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              Ngày đặt: {order.created_at}
+            </Typography>
+          </Box>
+        </Box>
+        <Button 
+          variant="outlined" 
+          onClick={() => navigate('/order-history')}
+          startIcon={<ArrowBackIcon />}
+          sx={{
+            borderRadius: 2,
+            '&:hover': {
+              transform: 'translateX(-4px)'
+            }
+          }}
+        >
           Quay lại
         </Button>
       </Box>
 
       <Grid container spacing={3}>
-
-        {/* Thông tin đơn hàng */}
+        {/* Order Status Overview */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Thông tin đơn hàng
-            </Typography>
-            <Grid container spacing={2}>
+          <Paper 
+            sx={{ 
+              p: 3,
+              background: theme => `linear-gradient(45deg, ${alpha(theme.palette.primary.main, 0.05)}, ${alpha(theme.palette.primary.light, 0.05)})`,
+              border: '1px solid',
+              borderColor: 'primary.light',
+              borderRadius: 3
+            }}
+          >
+            <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Mã đơn hàng
-                  </Typography>
-                  <Typography>{order.id}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box 
+                    sx={{ 
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                      boxShadow: 1
+                    }}
+                  >
+                    <ShoppingBagIcon color="primary" />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Trạng thái đơn hàng
+                    </Typography>
+                    <Chip
+                      label={orderStatusConfig[order.status]?.label || 'Không xác định'}
+                      color={orderStatusConfig[order.status]?.color as any || 'default'}
+                      sx={{ 
+                        mt: 0.5,
+                        fontWeight: 600,
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </Box>
                 </Box>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Ngày đặt hàng
-                  </Typography>
-                  <Typography>{order.created_at}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Phương thức thanh toán
-                  </Typography>
-                  <Typography>{order.payment_method === 1 ? 'COD' : order.payment_method === 2 ? 'VNPAY' : 'Tại quầy'}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Trạng thái đơn hàng
-                  </Typography>
-                  <Chip
-                    label={orderStatusConfig[order.status]?.label || 'Không xác định'}
-                    color={orderStatusConfig[order.status]?.color as any || 'default'}
-                    size="small"
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Trạng thái thanh toán
-                  </Typography>
-                  <Chip
-                    label={paymentStatusConfig[order.payment_status]?.label || 'Không xác định'}
-                    color={paymentStatusConfig[order.payment_status]?.color as any || 'default'}
-                    size="small"
-                  />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box 
+                    sx={{ 
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: 'background.paper',
+                      boxShadow: 1
+                    }}
+                  >
+                    <LocalShippingIcon color="primary" />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Trạng thái thanh toán
+                    </Typography>
+                    <Chip
+                      label={paymentStatusConfig[order.payment_status]?.label || 'Không xác định'}
+                      color={paymentStatusConfig[order.payment_status]?.color as any || 'default'}
+                      sx={{ 
+                        mt: 0.5,
+                        fontWeight: 600,
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </Box>
                 </Box>
               </Grid>
             </Grid>
+          </Paper>
+        </Grid>
+
+        {/* Shipping Information */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <PersonIcon color="primary" />
+              <Typography variant="h6" fontWeight={600}>
+                Thông tin giao hàng
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Người nhận
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {order.shipping_name}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Số điện thoại
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {order.shipping_phone}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Địa chỉ
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {order.shipping_address}, {order.shipping_ward_name}, {order.shipping_district_name}, {order.shipping_city_name}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Phương thức thanh toán
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {order.payment_method === 1 ? 'Thanh toán khi nhận hàng (COD)' : 
+                   order.payment_method === 2 ? 'Thanh toán qua VNPAY' : 
+                   'Thanh toán tại quầy'}
+                </Typography>
+              </Box>
+            </Box>
           </Paper>
         </Grid>
 
         {/* Voucher Information */}
         {order.voucher && (
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Thông tin Voucher
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Mã Voucher
-                    </Typography>
-                    <Typography>{order.voucher.code}</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Loại giảm giá
-                    </Typography>
-                    <Typography>
-                      {order.voucher.discount_type === 1 ? 'Phần trăm' : 'Tiền mặt'}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Giá trị giảm
-                    </Typography>
-                    <Typography>
-                      {order.voucher.discount_type === 1
-                        ? `${order.voucher.discount_value}%`
-                        : formatPrice(order.voucher.discount_value)}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Giá trị tối đa
-                    </Typography>
-                    <Typography>{formatPrice(order.voucher.max_discount)}</Typography>
-                  </Box>
-                </Grid>
-              </Grid>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <DiscountIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
+                  Thông tin Voucher
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Mã Voucher
+                  </Typography>
+                  <Chip 
+                    label={order.voucher.code}
+                    color="primary"
+                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Loại giảm giá
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {order.voucher.discount_type === 1 ? 'Giảm theo phần trăm' : 'Giảm theo số tiền'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Giá trị giảm
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500} color="error.main">
+                    {order.voucher.discount_type === 1
+                      ? `${order.voucher.discount_value}%`
+                      : formatPrice(order.voucher.discount_value)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Giảm tối đa
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    {formatPrice(order.voucher.max_discount)}
+                  </Typography>
+                </Box>
+              </Box>
             </Paper>
           </Grid>
         )}
 
-        {/* Địa chỉ giao hàng */}
+        {/* Products List */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Địa chỉ giao hàng
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Người nhận
-                  </Typography>
-                  <Typography>{order.shipping_name}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Số điện thoại
-                  </Typography>
-                  <Typography>{order.shipping_phone}</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Địa chỉ
-                  </Typography>
-                  <Typography>
-                    {order.shipping_address}, {order.shipping_ward_name}, {order.shipping_district_name}, {order.shipping_city_name}
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-
-        {/* Chi tiết sản phẩm */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Sản phẩm
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              Sản phẩm đã mua
             </Typography>
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Sản phẩm</TableCell>
-                    <TableCell>Thông tin</TableCell>
-                    <TableCell align="right">Đơn giá</TableCell>
-                    <TableCell align="right">Số lượng</TableCell>
-                    <TableCell align="right">Thành tiền</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Sản phẩm</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Thông tin</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>Đơn giá</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>Số lượng</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>Thành tiền</TableCell>
+                    {order.status === StatusOrderEnum.DELIVERED && (
+                      <TableCell align="center" sx={{ fontWeight: 600 }}>Đánh giá</TableCell>
+                    )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -333,17 +397,32 @@ const OrderDetail: React.FC = () => {
                           }}
                           style={{ textDecoration: 'none' }}
                         >
-                          <Box display="flex" alignItems="center">
+                          <Box 
+                            sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center',
+                              '&:hover img': {
+                                transform: 'scale(1.05)',
+                                transition: 'transform 0.3s ease'
+                              }
+                            }}
+                          >
                             <img
                               src={detail.product_detail.image_url}
                               alt={detail.product_detail.name}
-                              style={{ width: 50, height: 50, objectFit: 'cover', marginRight: 10 }}
+                              style={{ 
+                                width: 80, 
+                                height: 80, 
+                                objectFit: 'cover', 
+                                borderRadius: 8,
+                                transition: 'transform 0.3s ease'
+                              }}
                             />
                           </Box>
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" flexDirection="column" gap={1}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                           <Link
                             to={`/product/${detail.product_detail.product_id}`}
                             state={{
@@ -355,16 +434,9 @@ const OrderDetail: React.FC = () => {
                             style={{ textDecoration: 'none' }}
                           >
                             <Typography
-                              variant="body2"
                               sx={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                                wordWrap: 'break-word',
-                                lineHeight: 1.2,
-                                height: '2.4em',
-                                width: '40%',
+                                fontWeight: 500,
+                                color: 'text.primary',
                                 '&:hover': {
                                   color: 'primary.main'
                                 }
@@ -373,79 +445,97 @@ const OrderDetail: React.FC = () => {
                               {detail.product_detail.name}
                             </Typography>
                           </Link>
-                          <Typography variant="caption" color="text.secondary">
-                            {detail.product_detail.color} - {detail.product_detail.size}
-                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Chip 
+                              label={detail.product_detail.color}
+                              size="small"
+                              sx={{ bgcolor: 'grey.100' }}
+                            />
+                            <Chip 
+                              label={detail.product_detail.size}
+                              size="small"
+                              sx={{ bgcolor: 'grey.100' }}
+                            />
+                          </Box>
                         </Box>
                       </TableCell>
-                      <TableCell align="right">{formatPrice(detail.price)}</TableCell>
-                      <TableCell align="right">{detail.quantity}</TableCell>
-                      <TableCell align="right">{formatPrice(detail.total_price)}</TableCell>
-                    {order.status === StatusOrderEnum.DELIVERED && (
-                      <TableCell>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          color="primary"
-                          onClick={() => handleReviewOpen(detail.product_detail.product_id, detail.product_detail.name)}
-                        >
-                          Đánh giá
-                        </Button>
+                      <TableCell align="right">
+                        <Typography fontWeight={500}>
+                          {formatPrice(detail.price)}
+                        </Typography>
                       </TableCell>
-                    )}
+                      <TableCell align="right">
+                        <Typography fontWeight={500}>
+                          {detail.quantity}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography fontWeight={600} color="primary.main">
+                          {formatPrice(detail.total_price)}
+                        </Typography>
+                      </TableCell>
+                      {order.status === StatusOrderEnum.DELIVERED && (
+                        <TableCell align="center">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleReviewOpen(detail.product_detail.product_id, detail.product_detail.name)}
+                            sx={{
+                              borderRadius: 2,
+                              minWidth: 100
+                            }}
+                          >
+                            Đánh giá
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TableContainer>
-             <Box sx={{ mt: 2 }}>
-              <Grid container justifyContent="flex-end" spacing={1}>
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    Giá ban đầu:
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    {formatPrice(order.order_detail.reduce((sum, detail) => sum + detail.total_price, 0))}
-                  </Typography>
-                </Grid>
-                {order.discount_amount > 0 && (
-                  <>
-                    <Grid item xs={6}>
-                      <Typography color="error" variant="body1" align="right">
-                        Giảm giá:
+
+            {/* Order Summary */}
+            <Box 
+              sx={{ 
+                mt: 3,
+                p: 2,
+                borderRadius: 2,
+                bgcolor: 'grey.50',
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}
+            >
+              <Grid container spacing={1}>
+                <Grid item xs={12} sm={6} md={8} />
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography color="text.secondary">Tạm tính:</Typography>
+                      <Typography>
+                        {formatPrice(order.order_detail.reduce((sum, detail) => sum + detail.total_price, 0))}
                       </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography color="error" variant="body1" align="right">
-                        -{formatPrice(order.discount_amount)}
+                    </Box>
+                    {order.discount_amount > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography color="error.main">Giảm giá:</Typography>
+                        <Typography color="error.main">
+                          -{formatPrice(order.discount_amount)}
+                        </Typography>
+                      </Box>
+                    )}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography color="text.secondary">Phí vận chuyển:</Typography>
+                      <Typography>{formatPrice(order.amount_shipping)}</Typography>
+                    </Box>
+                    <Divider sx={{ my: 1 }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="h6" fontWeight={600}>Tổng cộng:</Typography>
+                      <Typography variant="h6" fontWeight={600} color="primary.main">
+                        {formatPrice(order.total_price)}
                       </Typography>
-                    </Grid>
-                  </>
-                )}
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    Phí ship:
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    {formatPrice(order.amount_shipping)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 1 }} />
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="h6" align="right">
-                    Tổng tiền:
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="h6" align="right">
-                    {formatPrice(order.total_price)}
-                  </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
               </Grid>
             </Box>
@@ -453,66 +543,103 @@ const OrderDetail: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Modal Thêm Review */}
-      <Dialog open={reviewOpen} onClose={handleReviewClose}>
-        <DialogTitle>Đánh giá sản phẩm {selectedProduct?.name}</DialogTitle>
+      {/* Enhanced Review Dialog */}
+      <Dialog 
+        open={reviewOpen} 
+        onClose={handleReviewClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight={600}>
+            Đánh giá sản phẩm
+          </Typography>
+          <Typography variant="subtitle2" color="text.secondary">
+            {selectedProduct?.name}
+          </Typography>
+        </DialogTitle>
         <DialogContent>
-          <Box display="flex" flexDirection="column" gap={2} mt={1}>
-            <Typography component="legend">Đánh giá của bạn</Typography>
-            <Rating
-              value={newRating}
-              onChange={(_, value) => setNewRating(value)}
-              size="large"
-            />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={500} gutterBottom>
+                Đánh giá của bạn
+              </Typography>
+              <Rating
+                value={newRating}
+                onChange={(_, value) => setNewRating(value)}
+                size="large"
+                sx={{
+                  '& .MuiRating-iconFilled': {
+                    color: 'primary.main'
+                  }
+                }}
+              />
+            </Box>
             <TextField
               fullWidth
               multiline
-              rows={3}
+              rows={4}
               label="Nhập đánh giá của bạn..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               disabled={submitting}
+              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleReviewClose} color="secondary" disabled={submitting}>
+        <DialogActions sx={{ p: 2.5, pt: 0 }}>
+          <Button 
+            onClick={handleReviewClose}
+            disabled={submitting}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
             Hủy
           </Button>
           <Button
             onClick={handleAddReview}
             variant="contained"
-            color="primary"
             disabled={submitting || !newRating || !newComment.trim()}
+            sx={{ borderRadius: 2, minWidth: 100 }}
           >
-            {submitting ? "Đang gửi..." : "Gửi"}
+            {submitting ? "Đang gửi..." : "Gửi đánh giá"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Cancel Order Confirmation Dialog */}
+      {/* Enhanced Cancel Dialog */}
       <Dialog
         open={cancelDialogOpen}
         onClose={handleCancelClose}
-        aria-labelledby="cancel-dialog-title"
-        aria-describedby="cancel-dialog-description"
         TransitionComponent={Fade}
-        TransitionProps={{ timeout: 300 }}
+        maxWidth="sm"
+        fullWidth
       >
-        <DialogTitle id="cancel-dialog-title">
-          Xác nhận hủy đơn hàng
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" fontWeight={600} color="error">
+            Xác nhận hủy đơn hàng
+          </Typography>
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="cancel-dialog-description">
-            Bạn có chắc chắn muốn hủy đơn hàng #{order.id} không? Hành động này không thể hoàn tác.
+          <DialogContentText sx={{ mt: 1 }}>
+            Bạn có chắc chắn muốn hủy đơn hàng #{order.id}? Hành động này không thể hoàn tác.
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelClose} color="primary">
-            Hủy
+        <DialogActions sx={{ p: 2.5, pt: 0 }}>
+          <Button 
+            onClick={handleCancelClose}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
+            Không, giữ lại
           </Button>
-          <Button onClick={handleCancelConfirm} color="error" variant="contained" autoFocus>
-            Xác nhận hủy
+          <Button 
+            onClick={handleCancelConfirm} 
+            color="error" 
+            variant="contained"
+            sx={{ borderRadius: 2 }}
+          >
+            Có, hủy đơn hàng
           </Button>
         </DialogActions>
       </Dialog>

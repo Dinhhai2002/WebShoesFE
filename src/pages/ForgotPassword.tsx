@@ -7,12 +7,26 @@ import {
   Button,
   Box,
   CircularProgress,
+  useTheme,
+  alpha,
+  IconButton,
+  InputAdornment,
+  Alert,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { LoadingButton } from '@mui/lab';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import authenticationApiService from '../services/API/AuthenticationApiService';
-
+import {
+  Person as PersonIcon,
+  Email as EmailIcon,
+  ArrowBack as ArrowBackIcon,
+  KeyboardReturn as KeyboardReturnIcon,
+  Info as InfoIcon,
+} from '@mui/icons-material';
+import { routes } from '../routes/routes';
 const ForgotPassword: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -72,13 +86,75 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Quên Mật Khẩu
-        </Typography>
+    <Container component="main" maxWidth="sm" sx={{ 
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      py: 4
+    }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.95)})`,
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Link to={routes.Login} style={{ textDecoration: 'none' }}>
+            <IconButton
+              sx={{
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                },
+              }}
+            >
+              <ArrowBackIcon color="primary" />
+            </IconButton>
+          </Link>
+          <Box>
+            <Typography variant="h4" fontWeight={600}>
+              Quên Mật Khẩu
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+              Nhập thông tin tài khoản để lấy lại mật khẩu
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Info Box */}
+        <Box
+          sx={{
+            mb: 4,
+            p: 2,
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.info.main, 0.05),
+            border: '1px solid',
+            borderColor: alpha(theme.palette.info.main, 0.1),
+            display: 'flex',
+            gap: 2,
+          }}
+        >
+          <InfoIcon color="info" sx={{ fontSize: 24 }} />
+          <Box>
+            <Typography variant="subtitle2" color="info.main" fontWeight={500} gutterBottom>
+              Hướng dẫn lấy lại mật khẩu:
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Nhập tên đăng nhập và email đã đăng ký. Chúng tôi sẽ gửi mã OTP đến email của bạn để xác thực.
+              Sau khi xác thực thành công, bạn có thể đặt lại mật khẩu mới.
+            </Typography>
+          </Box>
+        </Box>
+
         <form onSubmit={handleSubmit}>
-          <Box sx={{ mt: 3 }}>
+          <Box sx={{ mb: 3 }}>
             <TextField
               fullWidth
               label="Tên đăng nhập"
@@ -87,8 +163,18 @@ const ForgotPassword: React.FC = () => {
               onChange={handleChange}
               error={!!errors.user_name}
               helperText={errors.user_name}
-              sx={{ mb: 2 }}
+              InputProps={{
+                sx: { borderRadius: 2 },
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
             />
+          </Box>
+
+          <Box sx={{ mb: 4 }}>
             <TextField
               fullWidth
               label="Email"
@@ -98,21 +184,52 @@ const ForgotPassword: React.FC = () => {
               onChange={handleChange}
               error={!!errors.email}
               helperText={errors.email}
-              sx={{ mb: 3 }}
+              InputProps={{
+                sx: { borderRadius: 2 },
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EmailIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
             />
-            <Box display="flex" justifyContent="center">
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={loading}
-                sx={{ minWidth: 200 }}
-              >
-                {loading ? <CircularProgress size={24} /> : 'Gửi Mã OTP'}
-              </Button>
-            </Box>
           </Box>
+
+          <LoadingButton
+            type="submit"
+            variant="contained"
+            fullWidth
+            loading={loading}
+            sx={{
+              py: 1.5,
+              borderRadius: 2,
+              fontSize: '1rem',
+              textTransform: 'none',
+              boxShadow: theme.shadows[2],
+              '&:hover': {
+                boxShadow: theme.shadows[4],
+              },
+            }}
+          >
+            Gửi mã OTP
+          </LoadingButton>
+
+          <Button
+            component={Link}
+            to={routes.Login}
+            fullWidth
+            variant="outlined"
+            startIcon={<KeyboardReturnIcon />}
+            sx={{
+              mt: 2,
+              py: 1.5,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1rem',
+            }}
+          >
+            Quay lại đăng nhập
+          </Button>
         </form>
       </Paper>
     </Container>

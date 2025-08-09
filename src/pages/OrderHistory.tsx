@@ -26,7 +26,16 @@ import {
   DialogContentText,
   DialogActions,
   Fade,
-  TextField
+  TextField,
+  useTheme,
+  alpha,
+  Grid,
+  Card,
+  CardContent,
+  IconButton,
+  Tooltip,
+  Divider,
+  InputAdornment,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import orderApi from '../services/API/OrderApi';
@@ -37,6 +46,17 @@ import { PaymentMethodEnum } from '../utils/enum/PaymentMethodEnum';
 import { orderStatusConfig, paymentStatusConfig } from '../config/statusConfig';
 import { toast } from 'react-toastify';
 import ReturnRequestModal from '../components/ReturnRequestModal';
+import {
+  Receipt as ReceiptIcon,
+  LocalShipping as LocalShippingIcon,
+  Payment as PaymentIcon,
+  FilterList as FilterListIcon,
+  ViewList as ViewListIcon,
+  ViewModule as ViewModuleIcon,
+  Search as SearchIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
+import { debounce } from 'lodash';
 
 type ChipColor = 'warning' | 'info' | 'primary' | 'secondary' | 'success' | 'error' | 'default';
 
@@ -71,6 +91,7 @@ interface Order {
 }
 
 const OrderHistory: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,10 +106,28 @@ const OrderHistory: React.FC = () => {
   const [selectedReturnOrderId, setSelectedReturnOrderId] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Debounced search function
+  const debouncedSearch = React.useCallback(
+    debounce((term: string) => {
+      setSearchTerm(term);
+      setPage(1);
+    }, 3000),
+    []
+  );
 
   useEffect(() => {
     fetchOrders();
-  }, [statusFilter, page, itemsPerPage]);
+  }, [statusFilter, page, itemsPerPage, searchTerm]);
+
+  useEffect(() => {
+    // Cleanup debounced search on unmount
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const fetchOrders = async () => {
     try {
@@ -104,7 +143,8 @@ const OrderHistory: React.FC = () => {
         status: statusFilter,
         page: page,
         limit: itemsPerPage,
-        user_id: userData.id
+        user_id: userData.id,
+        key_search: searchTerm.trim() // Use key_search instead of search
       });
       
       const formattedOrders: Order[] = response.data.list.map((order: any) => ({
@@ -135,6 +175,15 @@ const OrderHistory: React.FC = () => {
   const handleItemsPerPageChange = (event: any) => {
     setItemsPerPage(Number(event.target.value));
     setPage(1); // Reset về trang 1 khi thay đổi số lượng items/page
+  };
+
+  const handleSearch = (value: string) => {
+    debouncedSearch(value);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setPage(1);
   };
 
   const formatPrice = (price: number) => {
@@ -228,184 +277,470 @@ const OrderHistory: React.FC = () => {
     fetchOrders(); // Refresh the orders list
   };
 
+  const getStatusIcon = (status: StatusOrderEnum) => {
+    switch (status) {
+      case StatusOrderEnum.PENDING:
+        return <ReceiptIcon sx={{ color: 'warning.main' }} />;
+      case StatusOrderEnum.PROCESSING:
+        return <LocalShippingIcon sx={{ color: 'info.main' }} />;
+      case StatusOrderEnum.SHIPPED:
+        return <LocalShippingIcon sx={{ color: 'primary.main' }} />;
+      case StatusOrderEnum.DELIVERED:
+        return <LocalShippingIcon sx={{ color: 'success.main' }} />;
+      default:
+        return <ReceiptIcon sx={{ color: 'error.main' }} />;
+    }
+  };
+
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
+      <Box 
+        sx={{ 
+          minHeight: '60vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
+        <CircularProgress size={40} />
+        <Typography color="text.secondary">
+          Đang tải danh sách đơn hàng...
+        </Typography>
       </Box>
     );
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Lịch sử đơn hàng
-      </Typography>
-
-      {/* Filters Row */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>Trạng thái đơn hàng</InputLabel>
-          <Select
-            value={statusFilter}
-            label="Trạng thái đơn hàng"
-            onChange={(e) => {
-              setStatusFilter(e.target.value as number);
-              setPage(1);
-            }}
-          >
-            <MenuItem value={-1}>Tất cả</MenuItem>
-            {Object.entries(orderStatusConfig).map(([status, config]) => (
-              <MenuItem key={status} value={parseInt(status)}>
-                {config.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl sx={{ minWidth: 120 }}>
-          <InputLabel>Hiển thị</InputLabel>
-          <Select
-            value={itemsPerPage}
-            label="Hiển thị"
-            onChange={handleItemsPerPageChange}
-          >
-            <MenuItem value={5}>5 / trang</MenuItem>
-            <MenuItem value={10}>10 / trang</MenuItem>
-            <MenuItem value={20}>20 / trang</MenuItem>
-            <MenuItem value={50}>50 / trang</MenuItem>
-          </Select>
-        </FormControl>
+      {/* Header Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" fontWeight={600} gutterBottom>
+          Lịch sử đơn hàng
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Quản lý và theo dõi tất cả đơn hàng của bạn
+        </Typography>
       </Box>
 
+      {/* Filters and View Toggle */}
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 2, 
+          mb: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          bgcolor: alpha(theme.palette.background.paper, 0.8),
+        }}
+      >
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Tìm kiếm theo mã đơn hàng..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={clearSearch}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                sx: { 
+                  borderRadius: 2,
+                  bgcolor: 'background.paper',
+                  '&:hover': {
+                    bgcolor: 'background.paper',
+                  },
+                }
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Trạng thái đơn hàng</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Trạng thái đơn hàng"
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as number);
+                  setPage(1);
+                }}
+                sx={{ borderRadius: 2 }}
+                startAdornment={<FilterListIcon sx={{ ml: 1, color: 'text.secondary' }} />}
+              >
+                <MenuItem value={-1}>Tất cả</MenuItem>
+                {Object.entries(orderStatusConfig).map(([status, config]) => (
+                  <MenuItem key={status} value={parseInt(status)}>
+                    {config.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Hiển thị</InputLabel>
+              <Select
+                value={itemsPerPage}
+                label="Hiển thị"
+                onChange={handleItemsPerPageChange}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value={5}>5 / trang</MenuItem>
+                <MenuItem value={10}>10 / trang</MenuItem>
+                <MenuItem value={20}>20 / trang</MenuItem>
+                <MenuItem value={50}>50 / trang</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Tooltip title="Chế độ danh sách">
+                <IconButton 
+                  onClick={() => setViewMode('list')}
+                  sx={{ 
+                    bgcolor: viewMode === 'list' ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                    color: viewMode === 'list' ? 'primary.main' : 'text.secondary'
+                  }}
+                >
+                  <ViewListIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Chế độ lưới">
+                <IconButton 
+                  onClick={() => setViewMode('grid')}
+                  sx={{ 
+                    bgcolor: viewMode === 'grid' ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                    color: viewMode === 'grid' ? 'primary.main' : 'text.secondary'
+                  }}
+                >
+                  <ViewModuleIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+
       {orders.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography>Không có đơn hàng nào</Typography>
+        <Paper 
+          sx={{ 
+            p: 4, 
+            textAlign: 'center',
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.background.paper, 0.8),
+          }}
+        >
+          <ReceiptIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            {searchTerm 
+              ? 'Không tìm thấy đơn hàng nào'
+              : 'Không có đơn hàng nào'
+            }
+          </Typography>
+          <Typography color="text.secondary">
+            {searchTerm 
+              ? `Không tìm thấy đơn hàng nào cho từ khóa "${searchTerm}"`
+              : 'Bạn chưa có đơn hàng nào trong lịch sử'
+            }
+          </Typography>
+          {searchTerm && (
+            <Button
+              variant="outlined"
+              startIcon={<CloseIcon />}
+              onClick={clearSearch}
+              sx={{ mt: 2 }}
+            >
+              Xóa tìm kiếm
+            </Button>
+          )}
         </Paper>
       ) : (
         <>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Mã đơn hàng</TableCell>
-                  <TableCell>Ngày đặt</TableCell>
-                  <TableCell>Tổng tiền</TableCell>
-                  <TableCell>Trạng thái đơn hàng</TableCell>
-                  <TableCell>Trạng thái thanh toán</TableCell>
-                  <TableCell align="right">Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {orders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>#{order.id}</TableCell>
-                    <TableCell>{order.created_at}</TableCell>
-                    <TableCell>{formatPrice(order.total_price)}</TableCell>
-                    <TableCell>
-                      {order.status && orderStatusConfig[order.status] ? (
-                        <Chip
-                          label={orderStatusConfig[order.status].label}
-                          color={orderStatusConfig[order.status].color}
-                          size="small"
-                        />
-                      ) : (
-                        <Chip
-                          label="Không xác định"
-                          color="default"
-                          size="small"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {order.payment_status && paymentStatusConfig[order.payment_status] ? (
-                        <Chip
-                          label={paymentStatusConfig[order.payment_status].label}
-                          color={paymentStatusConfig[order.payment_status].color}
-                          size="small"
-                        />
-                      ) : (
-                        <Chip
-                          label="Không xác định"
-                          color="default"
-                          size="small"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => navigate(`/order/${order.id}`)}
-                        sx={{ mr: 1 }}
-                      >
-                        Chi tiết
-                      </Button>
-                      {order.payment_status === PaymentStatusEnum.PENDING && order.payment_method === PaymentMethodEnum.VNPAY && (
-                        <Button
-                          variant="contained"
-                          size="small"
-                          color="primary"
-                          onClick={async () => {
-                            try {
-                              const response = await orderApi.getPaymentUrl(order.id);
-                              if (response.data) {
-                                window.location.href = response.data;
-                              }
-                            } catch (error) {
-                              toast.error('Không thể tạo link thanh toán');
-                            }
-                          }}
-                          sx={{ mr: 1 }}
-                        >
-                          Thanh toán
-                        </Button>
-                      )}
-                      {order.status !== StatusOrderEnum.DELIVERED && 
-                       order.status !== StatusOrderEnum.CANCELLED && 
-                       order.status !== StatusOrderEnum.SHIPPED && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          color="error"
-                          onClick={() => handleCancelClick(order)}
-                        >
-                          Hủy đơn
-                        </Button>
-                      )}
-                      {order.status === StatusOrderEnum.DELIVERED && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          color="warning"
-                          onClick={() => handleReturnRequestClick(order)}
-                        >
-                          Yêu cầu trả hàng
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          {viewMode === 'grid' ? (
+            <Grid container spacing={2}>
+              {orders.map((order) => (
+                <Grid item xs={12} sm={6} md={4} key={order.id}>
+                  <Card 
+                    elevation={0}
+                    sx={{ 
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: theme.shadows[4]
+                      }
+                    }}
+                  >
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                        {getStatusIcon(order.status)}
+                        <Typography variant="h6" fontWeight={500}>
+                          #{order.id}
+                        </Typography>
+                      </Box>
 
-          {/* Pagination with items per page info */}
-          <Stack spacing={2} alignItems="center" sx={{ mt: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Hiển thị {Math.min(itemsPerPage * page, totalRecords)} / {totalRecords} đơn hàng
-              </Typography>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                color="primary"
-                showFirstButton
-                showLastButton
-              />
-            </Box>
-          </Stack>
+                      <Stack spacing={1.5}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Ngày đặt
+                          </Typography>
+                          <Typography variant="body1">
+                            {order.created_at}
+                          </Typography>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Tổng tiền
+                          </Typography>
+                          <Typography variant="body1" fontWeight={600} color="primary.main">
+                            {formatPrice(order.total_price)}
+                          </Typography>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Trạng thái
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Chip
+                              label={orderStatusConfig[order.status]?.label || 'Không xác định'}
+                              color={orderStatusConfig[order.status]?.color}
+                              size="small"
+                            />
+                            <Chip
+                              label={paymentStatusConfig[order.payment_status]?.label || 'Không xác định'}
+                              color={paymentStatusConfig[order.payment_status]?.color}
+                              size="small"
+                            />
+                          </Box>
+                        </Box>
+
+                        <Divider />
+
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            onClick={() => navigate(`/order/${order.id}`)}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            Chi tiết
+                          </Button>
+                          {order.payment_status === PaymentStatusEnum.PENDING && 
+                           order.payment_method === PaymentMethodEnum.VNPAY && (
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              size="small"
+                              onClick={async () => {
+                                try {
+                                  const response = await orderApi.getPaymentUrl(order.id);
+                                  if (response.data) {
+                                    window.location.href = response.data;
+                                  }
+                                } catch (error) {
+                                  toast.error('Không thể tạo link thanh toán');
+                                }
+                              }}
+                              sx={{ borderRadius: 2 }}
+                            >
+                              Thanh toán
+                            </Button>
+                          )}
+                          {order.status !== StatusOrderEnum.DELIVERED && 
+                           order.status !== StatusOrderEnum.CANCELLED && 
+                           order.status !== StatusOrderEnum.SHIPPED && (
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                              color="error"
+                              onClick={() => handleCancelClick(order)}
+                              sx={{ borderRadius: 2 }}
+                            >
+                              Hủy đơn
+                            </Button>
+                          )}
+                          {order.status === StatusOrderEnum.DELIVERED && (
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                              color="warning"
+                              onClick={() => handleReturnRequestClick(order)}
+                              sx={{ borderRadius: 2 }}
+                            >
+                              Trả hàng
+                            </Button>
+                          )}
+                        </Stack>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <TableContainer 
+              component={Paper} 
+              elevation={0}
+              sx={{ 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Mã đơn hàng</TableCell>
+                    <TableCell>Ngày đặt</TableCell>
+                    <TableCell>Tổng tiền</TableCell>
+                    <TableCell>Trạng thái đơn hàng</TableCell>
+                    <TableCell>Trạng thái thanh toán</TableCell>
+                    <TableCell align="right">Thao tác</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {getStatusIcon(order.status)}
+                          #{order.id}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{order.created_at}</TableCell>
+                      <TableCell>
+                        <Typography color="primary.main" fontWeight={500}>
+                          {formatPrice(order.total_price)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={orderStatusConfig[order.status]?.label || 'Không xác định'}
+                          color={orderStatusConfig[order.status]?.color}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={paymentStatusConfig[order.payment_status]?.label || 'Không xác định'}
+                          color={paymentStatusConfig[order.payment_status]?.color}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => navigate(`/order/${order.id}`)}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            Chi tiết
+                          </Button>
+                          {order.payment_status === PaymentStatusEnum.PENDING && 
+                           order.payment_method === PaymentMethodEnum.VNPAY && (
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              size="small"
+                              onClick={async () => {
+                                try {
+                                  const response = await orderApi.getPaymentUrl(order.id);
+                                  if (response.data) {
+                                    window.location.href = response.data;
+                                  }
+                                } catch (error) {
+                                  toast.error('Không thể tạo link thanh toán');
+                                }
+                              }}
+                              sx={{ borderRadius: 2 }}
+                            >
+                              Thanh toán
+                            </Button>
+                          )}
+                          {order.status !== StatusOrderEnum.DELIVERED && 
+                           order.status !== StatusOrderEnum.CANCELLED && 
+                           order.status !== StatusOrderEnum.SHIPPED && (
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                              color="error"
+                              onClick={() => handleCancelClick(order)}
+                              sx={{ borderRadius: 2 }}
+                            >
+                              Hủy đơn
+                            </Button>
+                          )}
+                          {order.status === StatusOrderEnum.DELIVERED && (
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                              color="warning"
+                              onClick={() => handleReturnRequestClick(order)}
+                              sx={{ borderRadius: 2 }}
+                            >
+                              Trả hàng
+                            </Button>
+                          )}
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+
+          {/* Pagination */}
+          <Box 
+            sx={{ 
+              mt: 3, 
+              display: 'flex', 
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 2,
+              flexWrap: 'wrap'
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Hiển thị {Math.min(itemsPerPage * page, totalRecords)} / {totalRecords} đơn hàng
+            </Typography>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+              shape="rounded"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
         </>
       )}
 

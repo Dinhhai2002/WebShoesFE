@@ -15,10 +15,26 @@ import {
   Box,
   CircularProgress,
   SelectChangeEvent,
+  useTheme,
+  alpha,
+  Divider,
+  IconButton,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { LoadingButton } from '@mui/lab';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import authenticationApiService from '../services/API/AuthenticationApiService';
+import {
+  Person as PersonIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  Lock as LockIcon,
+  Cake as CakeIcon,
+  LocationOn as LocationOnIcon,
+  ArrowBack as ArrowBackIcon,
+  Home as HomeIcon,
+} from '@mui/icons-material';
+import { routes } from '../routes/routes';
 
 // GHN Interfaces
 interface GHNProvinceResponse {
@@ -41,6 +57,7 @@ interface GHNWardResponse {
 }
 
 const Register: React.FC = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
@@ -281,183 +298,359 @@ const Register: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Đăng Ký
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Tên đăng nhập"
-                name="user_name"
-                value={formData.user_name}
-                onChange={handleTextChange}
-                error={!!errors.user_name}
-                helperText={errors.user_name}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Họ tên"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleTextChange}
-                error={!!errors.full_name}
-                helperText={errors.full_name}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleTextChange}
-                error={!!errors.email}
-                helperText={errors.email}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Số điện thoại"
-                name="phone"
-                value={formData.phone}
-                onChange={handleTextChange}
-                error={!!errors.phone}
-                helperText={errors.phone}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Mật khẩu"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleTextChange}
-                error={!!errors.password}
-                helperText={errors.password}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Ngày sinh"
-                name="birthday"
-                type="date"
-                value={formData.birthday ? parseDate(formData.birthday) : ''}
-                onChange={handleTextChange}
-                InputLabelProps={{ shrink: true }}
-                error={!!errors.birthday}
-                helperText={errors.birthday}
-                inputProps={{
-                  max: new Date().toISOString().split('T')[0]
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={!!errors.city_id}>
-                <InputLabel>Tỉnh/Thành phố</InputLabel>
-                <Select
-                  name="city_id"
-                  value={formData.city_id}
-                  onChange={handleSelectChange}
-                  label="Tỉnh/Thành phố"
-                  disabled={loadingProvinces}
+    <Container component="main" maxWidth="lg" sx={{ py: 6 }}>
+      <Grid container spacing={3} alignItems="flex-start">
+        {/* Left side - Form */}
+        <Grid item xs={12} md={8}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.95)})`,
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            {/* Header */}
+            <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Link to="/" style={{ textDecoration: 'none' }}>
+                <IconButton
+                  sx={{
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.2),
+                    },
+                  }}
                 >
-                  <MenuItem value="">
-                    <em>Chọn tỉnh/thành phố</em>
-                  </MenuItem>
-                  {cities.map((city) => (
-                    <MenuItem key={city.ProvinceID} value={city.ProvinceID}>
-                      {city.ProvinceName}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {loadingProvinces && <FormHelperText>Đang tải...</FormHelperText>}
-                {errors.city_id && <FormHelperText>{errors.city_id}</FormHelperText>}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={!!errors.district_id}>
-                <InputLabel>Quận/Huyện</InputLabel>
-                <Select
-                  name="district_id"
-                  value={formData.district_id}
-                  onChange={handleSelectChange}
-                  label="Quận/Huyện"
-                  disabled={!formData.city_id || loadingDistricts}
-                >
-                  <MenuItem value="">
-                    <em>Chọn quận/huyện</em>
-                  </MenuItem>
-                  {districts.map((district) => (
-                    <MenuItem key={district.DistrictID} value={district.DistrictID}>
-                      {district.DistrictName}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {loadingDistricts && <FormHelperText>Đang tải...</FormHelperText>}
-                {errors.district_id && <FormHelperText>{errors.district_id}</FormHelperText>}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={!!errors.ward_id}>
-                <InputLabel>Phường/Xã</InputLabel>
-                <Select
-                  name="ward_id"
-                  value={formData.ward_id}
-                  onChange={handleSelectChange}
-                  label="Phường/Xã"
-                  disabled={!formData.district_id || loadingWards}
-                >
-                  <MenuItem value="">
-                    <em>Chọn phường/xã</em>
-                  </MenuItem>
-                  {wards.map((ward) => (
-                    <MenuItem key={ward.WardCode} value={ward.WardCode}>
-                      {ward.WardName}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {loadingWards && <FormHelperText>Đang tải...</FormHelperText>}
-                {errors.ward_id && <FormHelperText>{errors.ward_id}</FormHelperText>}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Địa chỉ chi tiết"
-                name="full_address"
-                value={formData.full_address}
-                onChange={handleTextChange}
-                error={!!errors.full_address}
-                helperText={errors.full_address}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Box display="flex" justifyContent="center">
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  disabled={loading}
-                  sx={{ minWidth: 200 }}
-                >
-                  {loading ? <CircularProgress size={24} /> : 'Đăng Ký'}
-                </Button>
+                  <ArrowBackIcon color="primary" />
+                </IconButton>
+              </Link>
+              <Box>
+                <Typography variant="h4" fontWeight={600}>
+                  Đăng Ký Tài Khoản
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                  Điền thông tin của bạn để tạo tài khoản mới
+                </Typography>
               </Box>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
+            </Box>
+
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={3}>
+                {/* Basic Information Section */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon color="primary" />
+                    Thông tin cơ bản
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Tên đăng nhập"
+                    name="user_name"
+                    value={formData.user_name}
+                    onChange={handleTextChange}
+                    error={!!errors.user_name}
+                    helperText={errors.user_name}
+                    InputProps={{
+                      sx: { borderRadius: 2 },
+                      startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Họ tên"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleTextChange}
+                    error={!!errors.full_name}
+                    helperText={errors.full_name}
+                    InputProps={{
+                      sx: { borderRadius: 2 },
+                      startAdornment: <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleTextChange}
+                    error={!!errors.email}
+                    helperText={errors.email}
+                    InputProps={{
+                      sx: { borderRadius: 2 },
+                      startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Số điện thoại"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleTextChange}
+                    error={!!errors.phone}
+                    helperText={errors.phone}
+                    InputProps={{
+                      sx: { borderRadius: 2 },
+                      startAdornment: <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Mật khẩu"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleTextChange}
+                    error={!!errors.password}
+                    helperText={errors.password}
+                    InputProps={{
+                      sx: { borderRadius: 2 },
+                      startAdornment: <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Ngày sinh"
+                    name="birthday"
+                    type="date"
+                    value={formData.birthday ? parseDate(formData.birthday) : ''}
+                    onChange={handleTextChange}
+                    InputLabelProps={{ shrink: true }}
+                    error={!!errors.birthday}
+                    helperText={errors.birthday}
+                    inputProps={{
+                      max: new Date().toISOString().split('T')[0]
+                    }}
+                    InputProps={{
+                      sx: { borderRadius: 2 },
+                      startAdornment: <CakeIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }}
+                  />
+                </Grid>
+
+                {/* Address Section */}
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="h6" fontWeight={600} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocationOnIcon color="primary" />
+                    Thông tin địa chỉ
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth error={!!errors.city_id}>
+                    <InputLabel>Tỉnh/Thành phố</InputLabel>
+                    <Select
+                      name="city_id"
+                      value={formData.city_id}
+                      onChange={handleSelectChange}
+                      label="Tỉnh/Thành phố"
+                      disabled={loadingProvinces}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <MenuItem value="">
+                        <em>Chọn tỉnh/thành phố</em>
+                      </MenuItem>
+                      {cities.map((city) => (
+                        <MenuItem key={city.ProvinceID} value={city.ProvinceID}>
+                          {city.ProvinceName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {loadingProvinces && (
+                      <FormHelperText>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CircularProgress size={16} />
+                          Đang tải...
+                        </Box>
+                      </FormHelperText>
+                    )}
+                    {errors.city_id && <FormHelperText>{errors.city_id}</FormHelperText>}
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth error={!!errors.district_id}>
+                    <InputLabel>Quận/Huyện</InputLabel>
+                    <Select
+                      name="district_id"
+                      value={formData.district_id}
+                      onChange={handleSelectChange}
+                      label="Quận/Huyện"
+                      disabled={!formData.city_id || loadingDistricts}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <MenuItem value="">
+                        <em>Chọn quận/huyện</em>
+                      </MenuItem>
+                      {districts.map((district) => (
+                        <MenuItem key={district.DistrictID} value={district.DistrictID}>
+                          {district.DistrictName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {loadingDistricts && (
+                      <FormHelperText>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CircularProgress size={16} />
+                          Đang tải...
+                        </Box>
+                      </FormHelperText>
+                    )}
+                    {errors.district_id && <FormHelperText>{errors.district_id}</FormHelperText>}
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth error={!!errors.ward_id}>
+                    <InputLabel>Phường/Xã</InputLabel>
+                    <Select
+                      name="ward_id"
+                      value={formData.ward_id}
+                      onChange={handleSelectChange}
+                      label="Phường/Xã"
+                      disabled={!formData.district_id || loadingWards}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <MenuItem value="">
+                        <em>Chọn phường/xã</em>
+                      </MenuItem>
+                      {wards.map((ward) => (
+                        <MenuItem key={ward.WardCode} value={ward.WardCode}>
+                          {ward.WardName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {loadingWards && (
+                      <FormHelperText>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CircularProgress size={16} />
+                          Đang tải...
+                        </Box>
+                      </FormHelperText>
+                    )}
+                    {errors.ward_id && <FormHelperText>{errors.ward_id}</FormHelperText>}
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Địa chỉ chi tiết"
+                    name="full_address"
+                    value={formData.full_address}
+                    onChange={handleTextChange}
+                    error={!!errors.full_address}
+                    helperText={errors.full_address}
+                    InputProps={{
+                      sx: { borderRadius: 2 },
+                      startAdornment: <HomeIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <LoadingButton
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    loading={loading}
+                    sx={{
+                      mt: 2,
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontSize: '1rem',
+                      textTransform: 'none',
+                      boxShadow: theme.shadows[2],
+                      '&:hover': {
+                        boxShadow: theme.shadows[4],
+                      },
+                    }}
+                  >
+                    Đăng Ký
+                  </LoadingButton>
+                </Grid>
+              </Grid>
+            </form>
+          </Paper>
+        </Grid>
+
+        {/* Right side - Information */}
+        <Grid item xs={12} md={4}>
+          <Box
+            sx={{
+              position: 'sticky',
+              top: 24,
+              p: 3,
+              borderRadius: 3,
+              bgcolor: alpha(theme.palette.primary.main, 0.03),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.1),
+            }}
+          >
+            <Typography variant="h5" fontWeight={600} gutterBottom>
+              Quy định đăng ký
+            </Typography>
+            <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
+              <Typography component="li" color="text.secondary">
+                Tên đăng nhập không được chứa ký tự đặc biệt
+              </Typography>
+              <Typography component="li" color="text.secondary">
+                Mật khẩu phải từ 8-20 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt
+              </Typography>
+              <Typography component="li" color="text.secondary">
+                Email phải là địa chỉ email hợp lệ
+              </Typography>
+              <Typography component="li" color="text.secondary">
+                Số điện thoại phải là 10 chữ số
+              </Typography>
+            </Box>
+
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="body1" align="center">
+                Đã có tài khoản?
+              </Typography>
+              <Button
+                component={Link}
+                to={routes.Login}
+                variant="outlined"
+                fullWidth
+                sx={{
+                  mt: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                }}
+              >
+                Đăng nhập ngay
+              </Button>
+            </Box>
+          </Box>
+        </Grid>
+      </Grid>
     </Container>
   );
 };

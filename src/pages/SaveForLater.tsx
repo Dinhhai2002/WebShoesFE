@@ -27,7 +27,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import saveForLaterApi, { SaveForLaterResponse } from '../services/API/SaveForLaterApi';
 import cartApi from '../services/API/CartApi';
-
+import { routes } from '../routes/routes';
 const SaveForLater: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ const SaveForLater: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate(routes.Login);
       return;
     }
     fetchSavedItems();

@@ -38,6 +38,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { CartContext } from "../context/CartContext";
 import { useContext } from "react";
 import QrCode2Icon from '@mui/icons-material/QrCode2';
+import ClearAllIcon from '@mui/icons-material/ClearAll';
 
 const ProductList = () => {
   const theme = useTheme();
@@ -68,6 +69,24 @@ const ProductList = () => {
     status: 1,
     key_search: "",
   });
+
+  // Add new state for active filters display
+  const [activeFilters, setActiveFilters] = useState<{
+    brand: { id: number; name: string } | null;
+    category: { id: number; name: string } | null;
+    color: { id: number; name: string } | null;
+    size: { id: number; name: string } | null;
+    material: { id: number; name: string } | null;
+  }>({
+    brand: null,
+    category: null,
+    color: null,
+    size: null,
+    material: null
+  });
+
+  // Add new state for filter drawer on mobile
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   useEffect(() => {
     const categoryFromUrl = searchParams.get('category_id');
@@ -195,7 +214,30 @@ const ProductList = () => {
     setFilters(prev => ({ ...prev, [field]: value }));
     setPage(1);
     
-    // Cập nhật URL khi thay đổi filter
+    // Update active filters
+    const fieldMap: { [key: string]: string } = {
+      'brand_id': 'brand',
+      'category_id': 'category',
+      'color_id': 'color',
+      'size_id': 'size',
+      'material_id': 'material'
+    };
+
+    const baseField = field.replace('_id', '');
+    const items = {
+      brand: brands,
+      category: categories,
+      color: colors,
+      size: sizes,
+      material: materials
+    }[baseField];
+
+    setActiveFilters(prev => ({
+      ...prev,
+      [fieldMap[field]]: value === -1 ? null : items.find(item => item.id === value) || null
+    }));
+
+    // Update URL
     const newSearchParams = new URLSearchParams(searchParams);
     if (value === -1 || value === "") {
       newSearchParams.delete(field);
@@ -206,6 +248,25 @@ const ProductList = () => {
       pathname: location.pathname,
       search: newSearchParams.toString()
     });
+  };
+
+  const handleClearAllFilters = () => {
+    setFilters(prev => ({
+      ...prev,
+      color_id: -1,
+      size_id: -1,
+      material_id: -1,
+      category_id: -1,
+      brand_id: -1
+    }));
+    setActiveFilters({
+      brand: null,
+      category: null,
+      color: null,
+      size: null,
+      material: null
+    });
+    navigate(location.pathname);
   };
 
   const handleAddToCart = async (product: ProductDetail) => {
@@ -255,115 +316,183 @@ const ProductList = () => {
           color: theme.palette.primary.main,
           textAlign: 'center'
         }}>
-          Bộ Sưu Tập Giày
+          Bộ Sưu Tập áo khoác
         </Typography>
         <Typography variant="subtitle1" sx={{ 
           textAlign: 'center',
           color: theme.palette.text.secondary,
           mb: 3
         }}>
-          Khám phá các mẫu giày mới nhất của chúng tôi
+          Khám phá các mẫu áo khoác mới nhất của chúng tôi
         </Typography>
       </Box>
 
-      {/* Filters Section */}
-      <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Stack
-          direction={isMobile ? 'column' : 'row'}
-          spacing={2}
-          alignItems="center"
-          justifyContent="space-between"
-        >
+      {/* Enhanced Filters Section */}
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 3, 
+          mb: 4, 
+          borderRadius: 2,
+          position: 'sticky',
+          top: 16,
+          zIndex: 10,
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(8px)'
+        }}
+      >
+        {/* Filter Header */}
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2
+        }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <FilterAltIcon color="primary" />
             <Typography variant="h6">Bộ lọc</Typography>
           </Box>
           
-          <Stack
-            direction={isMobile ? 'column' : 'row'}
-            spacing={2}
-            sx={{ width: isMobile ? '100%' : 'auto' }}
-          >
-            <FormControl fullWidth sx={{ minWidth: 120 }}>
-              <InputLabel>Thương hiệu</InputLabel>
-              <Select
-                value={filters.brand_id}
-                onChange={(e) => handleFilterChange("brand_id", e.target.value)}
-                label="Thương hiệu"
-              >
-                <MenuItem value={-1}>Tất cả</MenuItem>
-                {brands.map(brand => (
-                  <MenuItem key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          {Object.values(activeFilters).some(filter => filter !== null) && (
+            <Button 
+              size="small"
+              onClick={handleClearAllFilters}
+              startIcon={<ClearAllIcon />}
+              sx={{ color: theme.palette.grey[600] }}
+            >
+              Xóa bộ lọc
+            </Button>
+          )}
+        </Box>
 
-            <FormControl fullWidth sx={{ minWidth: 120 }}>
-              <InputLabel>Danh mục</InputLabel>
-              <Select
-                value={filters.category_id}
-                onChange={(e) => handleFilterChange("category_id", e.target.value)}
-                label="Danh mục"
-              >
-                <MenuItem value={-1}>Tất cả</MenuItem>
-                {categories.map(category => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        {/* Active Filters Display */}
+        {Object.values(activeFilters).some(filter => filter !== null) && (
+          <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {Object.entries(activeFilters).map(([key, value]) => 
+              value && (
+                <Chip
+                  key={key}
+                  label={`${value.name}`}
+                  onDelete={() => handleFilterChange(`${key}_id`, -1)}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                  sx={{ 
+                    borderRadius: 1,
+                    '& .MuiChip-label': { px: 1 },
+                    '& .MuiChip-deleteIcon': { fontSize: 16 }
+                  }}
+                />
+              )
+            )}
+          </Box>
+        )}
 
-            <FormControl fullWidth sx={{ minWidth: 120 }}>
-              <InputLabel>Màu sắc</InputLabel>
-              <Select
-                value={filters.color_id}
-                onChange={(e) => handleFilterChange("color_id", e.target.value)}
-                label="Màu sắc"
-              >
-                <MenuItem value={-1}>Tất cả</MenuItem>
-                {colors.map(color => (
-                  <MenuItem key={color.id} value={color.id}>
+        {/* Filter Controls */}
+        <Stack
+          direction={isMobile ? 'column' : 'row'}
+          spacing={2}
+          sx={{
+            '& .MuiFormControl-root': {
+              minWidth: isMobile ? '100%' : 150,
+            }
+          }}
+        >
+          <FormControl>
+            <InputLabel>Thương hiệu</InputLabel>
+            <Select
+              value={filters.brand_id}
+              onChange={(e) => handleFilterChange("brand_id", e.target.value)}
+              label="Thương hiệu"
+              size="small"
+            >
+              <MenuItem value={-1}>Tất cả</MenuItem>
+              {brands.map(brand => (
+                <MenuItem key={brand.id} value={brand.id}>
+                  {brand.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl>
+            <InputLabel>Danh mục</InputLabel>
+            <Select
+              value={filters.category_id}
+              onChange={(e) => handleFilterChange("category_id", e.target.value)}
+              label="Danh mục"
+              size="small"
+            >
+              <MenuItem value={-1}>Tất cả</MenuItem>
+              {categories.map(category => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl>
+            <InputLabel>Màu sắc</InputLabel>
+            <Select
+              value={filters.color_id}
+              onChange={(e) => handleFilterChange("color_id", e.target.value)}
+              label="Màu sắc"
+              size="small"
+            >
+              <MenuItem value={-1}>Tất cả</MenuItem>
+              {colors.map(color => (
+                <MenuItem key={color.id} value={color.id}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        backgroundColor: color.code || color.name.toLowerCase(),
+                        border: '1px solid #ddd'
+                      }}
+                    />
                     {color.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-            <FormControl fullWidth sx={{ minWidth: 120 }}>
-              <InputLabel>Size</InputLabel>
-              <Select
-                value={filters.size_id}
-                onChange={(e) => handleFilterChange("size_id", e.target.value)}
-                label="Size"
-              >
-                <MenuItem value={-1}>Tất cả</MenuItem>
-                {sizes.map(size => (
-                  <MenuItem key={size.id} value={size.id}>
-                    {size.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          <FormControl>
+            <InputLabel>Size</InputLabel>
+            <Select
+              value={filters.size_id}
+              onChange={(e) => handleFilterChange("size_id", e.target.value)}
+              label="Size"
+              size="small"
+            >
+              <MenuItem value={-1}>Tất cả</MenuItem>
+              {sizes.map(size => (
+                <MenuItem key={size.id} value={size.id}>
+                  {size.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-            <FormControl fullWidth sx={{ minWidth: 120 }}>
-              <InputLabel>Chất liệu</InputLabel>
-              <Select
-                value={filters.material_id}
-                onChange={(e) => handleFilterChange("material_id", e.target.value)}
-                label="Chất liệu"
-              >
-                <MenuItem value={-1}>Tất cả</MenuItem>
-                {materials.map(material => (
-                  <MenuItem key={material.id} value={material.id}>
-                    {material.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
+          <FormControl>
+            <InputLabel>Chất liệu</InputLabel>
+            <Select
+              value={filters.material_id}
+              onChange={(e) => handleFilterChange("material_id", e.target.value)}
+              label="Chất liệu"
+              size="small"
+            >
+              <MenuItem value={-1}>Tất cả</MenuItem>
+              {materials.map(material => (
+                <MenuItem key={material.id} value={material.id}>
+                  {material.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Stack>
       </Paper>
 

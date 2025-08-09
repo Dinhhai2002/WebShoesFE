@@ -13,8 +13,20 @@ import {
   Tabs,
   Tab,
   InputAdornment,
+  Badge,
+  Divider,
+  useTheme,
+  alpha,
 } from '@mui/material';
-import { PhotoCamera, Visibility, VisibilityOff } from '@mui/icons-material';
+import { 
+  PhotoCamera, 
+  Visibility, 
+  VisibilityOff,
+  Person as PersonIcon,
+  Lock as LockIcon,
+  LocationOn as LocationOnIcon,
+  Edit as EditIcon
+} from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import userApiService from '../services/API/UserApiService';
 import { UserResponse } from '../services/API/UserApiService';
@@ -47,6 +59,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const UserProfile: React.FC = () => {
+  const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<UserResponse | null>(null);
   const [tabValue, setTabValue] = useState(0);
@@ -192,7 +205,7 @@ const UserProfile: React.FC = () => {
 
     setLoading(true);
     try {
-      let updatedUserData = { ...user };
+      let updatedUserData = { ...user } as UserResponse;
       
       // Upload avatar if changed
       if (avatarFile) {
@@ -201,7 +214,7 @@ const UserProfile: React.FC = () => {
           ...updatedUserData,
           avatar_id: avatarResponse.data.id,
           avatar_url: avatarResponse.data.url
-        };
+        } as UserResponse;
       }
 
       // Update user profile
@@ -209,7 +222,7 @@ const UserProfile: React.FC = () => {
       updatedUserData = {
         ...updatedUserData,
         ...response.data
-      };
+      } as UserResponse;
 
       // Cập nhật state và localStorage
       setUser(updatedUserData);
@@ -250,23 +263,108 @@ const UserProfile: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="profile tabs">
-            <Tab label="Thông Tin Cá Nhân" />
-            <Tab label="Đổi Mật Khẩu" />
-            <Tab label="Địa Chỉ Giao Hàng" />
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Enhanced Header with Background */}
+        <Box
+          sx={{
+            p: 3,
+            background: `linear-gradient(45deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.light, 0.1)})`,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}
+        >
+          <PersonIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+          <Typography variant="h5" fontWeight={600}>
+            Thông tin tài khoản
+          </Typography>
+        </Box>
+
+        {/* Enhanced Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange} 
+            aria-label="profile tabs"
+            sx={{
+              '& .MuiTab-root': {
+                minHeight: 64,
+                fontWeight: 500,
+              },
+              '& .Mui-selected': {
+                color: 'primary.main',
+                fontWeight: 600,
+              },
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '3px 3px 0 0',
+              },
+            }}
+          >
+            <Tab 
+              icon={<PersonIcon sx={{ mb: 0.5 }} />} 
+              label="Thông Tin Cá Nhân" 
+              iconPosition="start"
+            />
+            <Tab 
+              icon={<LockIcon sx={{ mb: 0.5 }} />} 
+              label="Đổi Mật Khẩu" 
+              iconPosition="start"
+            />
+            <Tab 
+              icon={<LocationOnIcon sx={{ mb: 0.5 }} />} 
+              label="Địa Chỉ Giao Hàng" 
+              iconPosition="start"
+            />
           </Tabs>
         </Box>
 
         <TabPanel value={tabValue} index={0}>
           <form onSubmit={handleProfileSubmit}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-              <Avatar
-                src={avatarPreview}
-                sx={{ width: 100, height: 100, mb: 2 }}
-              />
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
+              <Badge
+                overlap="circular"
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                badgeContent={
+                  <label htmlFor="avatar-upload">
+                    <IconButton
+                      component="span"
+                      sx={{
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        },
+                        width: 32,
+                        height: 32,
+                      }}
+                    >
+                      <EditIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </label>
+                }
+              >
+                <Avatar
+                  src={avatarPreview}
+                  sx={{
+                    width: 120,
+                    height: 120,
+                    border: '4px solid white',
+                    boxShadow: theme.shadows[3],
+                  }}
+                />
+              </Badge>
               <input
                 accept="image/*"
                 style={{ display: 'none' }}
@@ -274,146 +372,206 @@ const UserProfile: React.FC = () => {
                 type="file"
                 onChange={handleAvatarChange}
               />
-              <label htmlFor="avatar-upload">
-                <IconButton color="primary" component="span">
-                  <PhotoCamera />
-                </IconButton>
-              </label>
+              <Typography variant="subtitle1" sx={{ mt: 2, color: 'text.secondary' }}>
+                Nhấn vào biểu tượng bút chì để thay đổi ảnh đại diện
+              </Typography>
             </Box>
-            <TextField
-              fullWidth
-              label="Họ tên"
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleChange}
-              error={!!errors.full_name}
-              helperText={errors.full_name}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={!!errors.email}
-              helperText={errors.email}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Số điện thoại"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              error={!!errors.phone}
-              helperText={errors.phone}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Địa chỉ"
-              name="full_address"
-              value={formData.full_address}
-              onChange={handleChange}
-              error={!!errors.full_address}
-              helperText={errors.full_address}
-              sx={{ mb: 3 }}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Cập Nhật Thông Tin'}
-            </Button>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Họ tên"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleChange}
+                  error={!!errors.full_name}
+                  helperText={errors.full_name}
+                  InputProps={{
+                    sx: {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  InputProps={{
+                    sx: {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Số điện thoại"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  InputProps={{
+                    sx: {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Địa chỉ"
+                  name="full_address"
+                  value={formData.full_address}
+                  onChange={handleChange}
+                  error={!!errors.full_address}
+                  helperText={errors.full_address}
+                  InputProps={{
+                    sx: {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={loading}
+                  sx={{
+                    mt: 2,
+                    height: 48,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                  }}
+                >
+                  {loading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    'Cập nhật thông tin'
+                  )}
+                </Button>
+              </Grid>
+            </Grid>
           </form>
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <form onSubmit={handlePasswordSubmit}>
-            <TextField
-              fullWidth
-              label="Mật khẩu hiện tại"
-              name="old_password"
-              type={showPasswords.old_password ? 'text' : 'password'}
-              value={passwordData.old_password}
-              onChange={handlePasswordChange}
-              error={!!passwordErrors.old_password}
-              helperText={passwordErrors.old_password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => togglePasswordVisibility('old_password')}
-                      edge="end"
-                    >
-                      {showPasswords.old_password ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Mật khẩu mới"
-              name="new_password"
-              type={showPasswords.new_password ? 'text' : 'password'}
-              value={passwordData.new_password}
-              onChange={handlePasswordChange}
-              error={!!passwordErrors.new_password}
-              helperText={passwordErrors.new_password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => togglePasswordVisibility('new_password')}
-                      edge="end"
-                    >
-                      {showPasswords.new_password ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="Xác nhận mật khẩu"
-              name="confirm_password"
-              type={showPasswords.confirm_password ? 'text' : 'password'}
-              value={passwordData.confirm_password}
-              onChange={handlePasswordChange}
-              error={!!passwordErrors.confirm_password}
-              helperText={passwordErrors.confirm_password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => togglePasswordVisibility('confirm_password')}
-                      edge="end"
-                    >
-                      {showPasswords.confirm_password ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 3 }}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              disabled={loading}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Đổi Mật Khẩu'}
-            </Button>
-          </form>
+          <Box sx={{ maxWidth: 600, mx: 'auto' }}>
+            <form onSubmit={handlePasswordSubmit}>
+              <TextField
+                fullWidth
+                label="Mật khẩu hiện tại"
+                name="old_password"
+                type={showPasswords.old_password ? 'text' : 'password'}
+                value={passwordData.old_password}
+                onChange={handlePasswordChange}
+                error={!!passwordErrors.old_password}
+                helperText={passwordErrors.old_password}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => togglePasswordVisibility('old_password')}
+                        edge="end"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        {showPasswords.old_password ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: 2,
+                  }
+                }}
+                sx={{ mb: 3 }}
+              />
+              <TextField
+                fullWidth
+                label="Mật khẩu mới"
+                name="new_password"
+                type={showPasswords.new_password ? 'text' : 'password'}
+                value={passwordData.new_password}
+                onChange={handlePasswordChange}
+                error={!!passwordErrors.new_password}
+                helperText={passwordErrors.new_password}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => togglePasswordVisibility('new_password')}
+                        edge="end"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        {showPasswords.new_password ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: 2,
+                  }
+                }}
+                sx={{ mb: 3 }}
+              />
+              <TextField
+                fullWidth
+                label="Xác nhận mật khẩu"
+                name="confirm_password"
+                type={showPasswords.confirm_password ? 'text' : 'password'}
+                value={passwordData.confirm_password}
+                onChange={handlePasswordChange}
+                error={!!passwordErrors.confirm_password}
+                helperText={passwordErrors.confirm_password}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => togglePasswordVisibility('confirm_password')}
+                        edge="end"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        {showPasswords.confirm_password ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: 2,
+                  }
+                }}
+                sx={{ mb: 4 }}
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                disabled={loading}
+                sx={{
+                  height: 48,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Đổi mật khẩu'
+                )}
+              </Button>
+            </form>
+          </Box>
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
