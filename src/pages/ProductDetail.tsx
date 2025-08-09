@@ -74,9 +74,9 @@ const ProductDetailPage: React.FC = () => {
 
                 // Fetch all options
                 const [colorsResponse, sizesResponse, materialsResponse] = await Promise.all([
-                    authenticationApiService.getColors({ status: 1 }),
-                    authenticationApiService.getSizes({ status: 1 }),
-                    authenticationApiService.getMaterials({ status: 1 })
+                    authenticationApiService.getColors({ status: 1, limit: 500 }),
+                    authenticationApiService.getSizes({ status: 1, limit: 500 }),
+                    authenticationApiService.getMaterials({ status: 1, limit: 500 })
                 ]);
 
                 // Filter available options
