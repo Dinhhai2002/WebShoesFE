@@ -123,7 +123,7 @@ const Login = () => {
             </Typography>
             <Box
               component="img"
-              src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/logo1.jpg?alt=media"
+              src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/czlogo.jpg?alt=media"
               alt="Login"
               sx={{
                 width: '100%',

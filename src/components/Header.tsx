@@ -264,7 +264,7 @@ const Header: React.FC = () => {
           }}
         >
           <img 
-            src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/logo1.jpg?alt=media" 
+            src="https://firebasestorage.googleapis.com/v0/b/uploadimage-aa334.appspot.com/o/czlogo.jpg?alt=media" 
             alt="Logo" 
             style={{ 
               height: 45,
@@ -283,7 +283,7 @@ const Header: React.FC = () => {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            WEB SUNNY
+            WEB CoatZ
           </Typography>
         </Box>
 
