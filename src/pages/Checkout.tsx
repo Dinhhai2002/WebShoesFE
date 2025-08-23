@@ -270,12 +270,11 @@ const Checkout: React.FC = () => {
           setLoadingShipping(true);
           
           const totalValue = cart.reduce((total, item) => total + item.product_detail.price * item.quantity, 0);
-          
           const request = {
             service_id: selectedService,
             insurance_value: totalValue,
             from_district_id: 1454, // Default from district
-            to_district_id: selectedDistrict as number, // Ensure it's a number
+            to_district_id: selectedAddress?.district_id as number, // Ensure it's a number
             from_ward_code: "20109", // Default from ward code
             to_ward_code: selectedWard,
             weight: 500, // Default weight in grams
@@ -316,11 +315,12 @@ const Checkout: React.FC = () => {
         );
         if (defaultAddress) {
           setSelectedAddress(defaultAddress);
-          // Set selectedDistrict và selectedWard từ địa chỉ mặc định
-          setSelectedDistrict(defaultAddress.district_id);
-          setSelectedWard(defaultAddress.ward_id?.toString() || "");
           // (Có thể set luôn selectedProvince nếu cần)
           setSelectedProvince(defaultAddress.city_id);
+          setSelectedWard(`${defaultAddress.ward_id}`);
+          setSelectedDistrict(defaultAddress.district_id);
+          setSelectedService('');
+          setShippingFee(0);
           // Auto-fetch available services cho địa chỉ mặc định
           // if (defaultAddress.district_id) {
           //   try {
