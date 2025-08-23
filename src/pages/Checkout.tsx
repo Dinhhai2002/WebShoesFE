@@ -354,7 +354,7 @@ const Checkout: React.FC = () => {
         const response = await voucherApi.findAll({
           status: 1,
           page: 1,
-          limit: 10, // Fetch more if needed, or implement pagination/search
+          limit: 100, // Fetch more if needed, or implement pagination/search
         });
         setVouchers(response.data.list);
       } catch (error) {
