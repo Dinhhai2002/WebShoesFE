@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material';
 const Footer: React.FC = () => {
     return (
         <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#eee' }}>
-            <Typography variant="body2">© 2025 E-Shop. All rights reserved.</Typography>
+            <Typography variant="body2">© 2025 Coatz-Shop. All rights reserved.</Typography>
         </Box>
     );
 };

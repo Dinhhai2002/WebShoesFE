@@ -16,7 +16,6 @@ import {
   RadioGroup,
   FormControlLabel,
   FormControl,
-  FormLabel,
   Avatar,
   MenuItem,
   Select,
@@ -33,7 +32,6 @@ import {
 } from "@mui/material";
 // Import Voucher and ApplyVoucherResponse, assume CartItem is exported from CartContext
 import { CartContext, CartItem } from "../context/CartContext";
-import VoucherBlock from "../components/VoucherBlock";
 import voucherApi, {
   Voucher,
   ApplyVoucherResponse,
@@ -72,23 +70,21 @@ const Checkout: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [vouchers, setVouchers] = useState<Voucher[]>([]); // Use Voucher type
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null); // Use Voucher type
-  const [bestVoucher, setBestVoucher] = useState<ApplyVoucherResponse | null>(
-    null
-  ); // State for best voucher info
+  const [, setBestVoucher] = useState<ApplyVoucherResponse | null>(null);
   const [discount, setDiscount] = useState(0);
-  const [voucherLoading, setVoucherLoading] = useState(false); // State for voucher loading
-  const [applyingVoucher, setApplyingVoucher] = useState(false); // State for applying voucher
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [applyingVoucher, setApplyingVoucher] = useState(false);
   const cartContext = useContext(CartContext); // Get the context object
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Destructure after checking context exists to satisfy TypeScript
   const cart = cartContext?.cart || [];
-  const resetCart =
-    cartContext?.resetCart ||
-    (() => {
-      console.error("resetCart function not available in CartContext");
-    });
+  // const resetCart =
+  //   cartContext?.resetCart ||
+  //   (() => {
+  //     console.error("resetCart function not available in CartContext");
+  //   });
 
   // GHN Location states
   const [ghnProvinces, setGhnProvinces] = useState<any[]>([]);
@@ -436,42 +432,21 @@ const Checkout: React.FC = () => {
   }, [cart, vouchers]); // Re-run when cart or voucher list changes
 
   const handleVoucherSelect = async (voucher: Voucher | null) => {
-    // If user selects "Không sử dụng voucher" (null)
     if (!voucher) {
       setSelectedVoucher(null);
       setDiscount(0);
-      toast.info("Đã bỏ chọn voucher.");
       return;
     }
-
-    // If user selects a specific voucher from the dropdown
     try {
-      setApplyingVoucher(true); // Set applying state to true
+      setApplyingVoucher(true);
       const subtotal = calculateSubTotal();
-      const response = await voucherApi.apply(voucher.id, {
-        total_amount: subtotal,
-      });
-
-      // Update state with the manually selected voucher and its discount
+      const response = await voucherApi.apply(voucher.id, { total_amount: subtotal });
       setSelectedVoucher(voucher);
       setDiscount(response.data.amount_voucher);
-      toast.success(`Áp dụng voucher ${voucher.code} thành công!`);
-    } catch (error: any) {
-      toast.error(
-        `Không thể áp dụng voucher ${voucher.code}: ${error.message}`
-      );
-      // If applying the manually selected voucher fails, revert to the best voucher if one was found and applied previously
-      if (bestVoucher && bestVoucher.voucher) {
-        setSelectedVoucher(bestVoucher.voucher);
-        setDiscount(bestVoucher.amount_voucher);
-        toast.info(`Đã quay lại voucher tốt nhất: ${bestVoucher.voucher.code}`);
-      } else {
-        // If no best voucher was applicable either, reset selection
-        setSelectedVoucher(null);
-        setDiscount(0);
-      }
+    } catch (error) {
+      toast.error("Không thể áp dụng voucher này");
     } finally {
-      setApplyingVoucher(false); // Set applying state to false
+      setApplyingVoucher(false);
     }
   };
 
@@ -735,178 +710,15 @@ const Checkout: React.FC = () => {
   }
 
   return (
-    <Container sx={{ mb: 4, mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        🛒 Thanh toán
-      </Typography>
-
-      <Grid container spacing={3}>
-        {/* Danh sách sản phẩm */}
+    <Container maxWidth={false} sx={{ mb: 6, mt: 2, px: { xs: 2, md: 6 } }}>
+      <Grid container spacing={4}>
+        {/* Left: Shipping */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Sản phẩm trong đơn hàng
-            </Typography>
-            <List>
-              {cart.map(
-                (
-                  item: CartItem // Add CartItem type
-                ) =>
-                  item &&
-                  item.product_detail && (
-                    <ListItem key={item.id} sx={{ alignItems: "flex-start" }}>
-                      <Avatar
-                        src={item.product_detail.image_url}
-                        alt={item.product_detail.name}
-                        variant="square"
-                        sx={{ width: 60, height: 60, mr: 2 }}
-                      />
-                      <ListItemText
-                        primary={item.product_detail.name}
-                        secondary={`Số lượng: ${item.quantity}`}
-                        primaryTypographyProps={{
-                          fontWeight: "medium",
-                          mb: 0.5,
-                        }}
-                      />
-                      <Typography sx={{ fontWeight: "medium" }}>
-                        {(
-                          item.product_detail.price * item.quantity
-                        ).toLocaleString()}{" "}
-                        đ
-                      </Typography>
-                    </ListItem>
-                  )
-              )}
-            </List>
-            <Divider sx={{ my: 2 }} />
-
-            {/* Voucher selection */}
-            <Box sx={{ mb: 2 }}>
-              {/* Voucher selection - Added InputLabel */}
-              <FormControl fullWidth variant="outlined">
-                <InputLabel id="voucher-select-label">
-                  {voucherLoading ? "Đang tìm voucher tốt nhất..." : 
-                   applyingVoucher ? "Đang áp dụng voucher..." : 
-                   "Chọn Voucher"}
-                </InputLabel>
-                <Select
-                  labelId="voucher-select-label"
-                  label={voucherLoading ? "Đang tìm voucher tốt nhất..." : 
-                         applyingVoucher ? "Đang áp dụng voucher..." : 
-                         "Chọn Voucher"}
-                  // Ensure value is number or empty string, matching MenuItem values
-                  value={selectedVoucher ? selectedVoucher.id : ""}
-                  onChange={(e: SelectChangeEvent<number | string>) => {
-                    // Explicitly type the event
-                    const selectedId = e.target.value;
-                    // Handle empty string case for "Không sử dụng"
-                    if (selectedId === "") {
-                      handleVoucherSelect(null);
-                      return;
-                    }
-                    const selected =
-                      vouchers.find((v) => v.id === Number(selectedId)) || null; // Find voucher or set null
-                    handleVoucherSelect(selected);
-                  }}
-                  displayEmpty
-                  // Removed renderValue prop to rely on default MenuItem display
-                  disabled={voucherLoading || applyingVoucher} // Disable dropdown when loading or applying
-                  startAdornment={(voucherLoading || applyingVoucher) ? 
-                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, mr: 1 }}>
-                      <CircularProgress size={20} color="inherit" />
-                    </Box> : undefined
-                  }
-                >
-                  {!voucherLoading && !applyingVoucher && (
-                    <MenuItem value="">
-                      <em>không sử dụng voucher</em>
-                    </MenuItem>
-                  )}
-                  {vouchers.map((voucher) => (
-                    <MenuItem key={voucher.id} value={voucher.id}>
-                      {voucher.code} - Giảm{" "}
-                      {voucher.discount_type === 1
-                        ? `${voucher.discount_value}%`
-                        : `${voucher.discount_value.toLocaleString()}đ`}{" "}
-                      (Đơn tối thiểu: {voucher.min_order_value.toLocaleString()}
-                      đ)
-                    </MenuItem>
-                  ))}
-                </Select>
-                {voucherLoading && (
-                  <FormHelperText>Đang tìm voucher tốt nhất cho đơn hàng của bạn</FormHelperText>
-                )}
-                {applyingVoucher && (
-                  <FormHelperText>Đang áp dụng voucher...</FormHelperText>
-                )}
-              </FormControl>
-            </Box>
-
-            {/* Tổng tiền */}
-            <Box sx={{ mt: 2 }}>
-              <Grid container justifyContent="flex-end" spacing={1}>
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    Tạm tính:
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    {calculateSubTotal().toLocaleString()} đ
-                  </Typography>
-                </Grid>
-                {discount > 0 && (
-                  <>
-                    <Grid item xs={6}>
-                      <Typography color="error" variant="body1" align="right">
-                        Giảm giá:
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6}>
-                      <Typography color="error" variant="body1" align="right">
-                        -{discount.toLocaleString()} đ
-                      </Typography>
-                    </Grid>
-                  </>
-                )}
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    Phí ship:
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body1" align="right">
-                    {shippingFee > 0 ? shippingFee.toLocaleString() : "Chưa tính"} đ
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 1 }} />
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="h6" align="right">
-                    Tổng tiền:
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="h6" align="right">
-                    {calculateTotal().toLocaleString()} đ
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* Thông tin giao hàng */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Thông tin giao hàng
-            </Typography>
-
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>Thanh toán</Typography>
+          <Paper sx={{ p: 4, borderRadius: 3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>Thông tin giao hàng</Typography>
+           
             <FormControl component="fieldset" sx={{ mb: 2 }}>
-              <FormLabel component="legend">Chọn địa chỉ</FormLabel>
               <RadioGroup
                 row
                 value={useNewAddress ? "new" : "existing"}
@@ -1128,13 +940,10 @@ const Checkout: React.FC = () => {
               </Box>
             )}
           </Paper>
-
           {/* Shipping Services Section */}
           {(selectedAddress || (useNewAddress && selectedWard && selectedDistrict)) && (
-            <Paper sx={{ p: 3, mt: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                🚚 Dịch vụ vận chuyển
-              </Typography>
+            <Paper sx={{ p: 4, mt: 3, borderRadius: 3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Dịch vụ vận chuyển</Typography>
               
               <FormControl fullWidth variant="outlined">
                 <InputLabel id="service-select-label">
@@ -1194,54 +1003,79 @@ const Checkout: React.FC = () => {
             </Paper>
           )}
         </Grid>
+        {/* Right: Order Summary */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 4, borderRadius: 3, position: 'sticky', top: 24, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Tóm tắt giỏ hàng</Typography>
+            <List sx={{ mb: 1 }}>
+              {cart.map((item: CartItem) => item && item.product_detail && (
+                <ListItem key={item.id} sx={{ px: 0 }}>
+                  <Avatar src={item.product_detail.image_url} alt={item.product_detail.name} variant="rounded" sx={{ width: 56, height: 56, mr: 2 }} />
+                  <ListItemText primary={item.product_detail.name} secondary={`x${item.quantity}`} primaryTypographyProps={{ fontWeight: 500 }} />
+                  <Typography sx={{ fontWeight: 600 }}>{(item.product_detail.price * item.quantity).toLocaleString()} đ</Typography>
+                </ListItem>
+              ))}
+            </List>
+            {/* Voucher: suggestion + manual override */}
+            <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
+              <InputLabel id="voucher-select-label">
+                {voucherLoading ? 'Đang tìm voucher tốt nhất...' : applyingVoucher ? 'Đang áp dụng voucher...' : 'Chọn voucher'}
+              </InputLabel>
+              <Select
+                labelId="voucher-select-label"
+                label={voucherLoading ? 'Đang tìm voucher tốt nhất...' : applyingVoucher ? 'Đang áp dụng voucher...' : 'Chọn voucher'}
+                value={selectedVoucher ? selectedVoucher.id : ''}
+                onChange={async (e: SelectChangeEvent<number | string>) => {
+                  const selectedId = e.target.value;
+                  if (selectedId === '') {
+                    await handleVoucherSelect(null);
+                    return;
+                  }
+                  const selected = vouchers.find(v => v.id === Number(selectedId)) || null;
+                  await handleVoucherSelect(selected);
+                }}
+                disabled={voucherLoading}
+              >
+                <MenuItem value=""><em>Không dùng voucher</em></MenuItem>
+                {vouchers.map((voucher) => (
+                  <MenuItem key={voucher.id} value={voucher.id}>
+                    {voucher.code} - {voucher.discount_type === 1 ? `${voucher.discount_value}%` : `${voucher.discount_value.toLocaleString()}đ`} (Min: {voucher.min_order_value.toLocaleString()}đ)
+                  </MenuItem>
+                ))}
+              </Select>
+              {(voucherLoading || applyingVoucher) && (
+                <FormHelperText>{voucherLoading ? 'Đang tìm voucher tốt nhất...' : 'Đang áp dụng voucher...'}</FormHelperText>
+              )}
+            </FormControl>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', rowGap: 1, mb: 2 }}>
+              <Typography color="text.secondary">Tạm tính</Typography>
+              <Typography>{calculateSubTotal().toLocaleString()} đ</Typography>
+              <Typography color="text.secondary">Phí vận chuyển</Typography>
+              <Typography>{shippingFee > 0 ? shippingFee.toLocaleString() : '—'} đ</Typography>
+              <Typography color="text.secondary">Giảm giá</Typography>
+              <Typography>-{discount.toLocaleString()} đ</Typography>
+            </Box>
+            <Divider sx={{ my: 1 }} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', mb: 2 }}>
+              <Typography sx={{ fontWeight: 700 }}>Tổng cộng</Typography>
+              <Typography sx={{ fontWeight: 800 }}>{calculateTotal().toLocaleString()} đ</Typography>
+            </Box>
+            <FormControl component="fieldset" sx={{ mb: 2 }}>
+              <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                <FormControlLabel value="cod" control={<Radio />} label="Thanh toán khi nhận hàng (COD)" />
+                <FormControlLabel value="online" control={<Radio />} label="Thanh toán online (VNPay)" />
+              </RadioGroup>
+            </FormControl>
+            <Button fullWidth variant="contained" size="large" sx={{ borderRadius: 2 }} onClick={() => setConfirmOpen(true)} disabled={(!useNewAddress && !selectedAddress) || cart.length === 0 || loading || shippingFee === 0}>
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Thanh toán ngay'}
+            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mt: 2 }}>
+              <Avatar sx={{ width: 20, height: 20 }}>🔒</Avatar>
+              <Typography variant="body2" color="text.secondary">Thanh toán an toàn – Mã hóa SSL. Thông tin của bạn được bảo mật.</Typography>
+            </Box>
+          </Paper>
+        </Grid>
       </Grid>
-
-      {/* Phương thức thanh toán */}
-      <Paper sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Phương thức thanh toán
-        </Typography>
-        <FormControl component="fieldset">
-          <RadioGroup
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-          >
-            <FormControlLabel
-              value="cod"
-              control={<Radio />}
-              label="Thanh toán khi nhận hàng (COD)"
-            />
-            <FormControlLabel
-              value="online"
-              control={<Radio />}
-              label="Thanh toán online (VNPay)"
-            />
-          </RadioGroup>
-        </FormControl>
-      </Paper>
-
-      {/* Nút Xác nhận thanh toán */}
-      <Box textAlign="center" mt={3}>
-        <Button
-          variant="contained"
-          size="large"
-          color="primary"
-          onClick={() => setConfirmOpen(true)}
-          // Disable if using existing address and none is selected, OR if using new address and form is invalid, OR if shipping fee is not calculated
-          disabled={(!useNewAddress && !selectedAddress) || cart.length === 0 || loading || shippingFee === 0}
-        >
-          {loading ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            paymentMethod === "cod" ? "Đặt hàng" : "Tiến hành thanh toán VNPay"
-          )}
-        </Button>
-        {shippingFee === 0 && cart.length > 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Vui lòng chọn địa chỉ và dịch vụ vận chuyển để tính phí ship trước khi đặt hàng
-          </Typography>
-        )}
-      </Box>
 
       <Dialog
         open={confirmOpen}
